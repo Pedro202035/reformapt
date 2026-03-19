@@ -1,0 +1,2503 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnóstico de Reforma</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,400&family=DM+Mono:wght@400;500&family=Mulish:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #13120f;
+  --panel: #1c1a16;
+  --card: #232018;
+  --border: #302c24;
+  --border2: #403a2f;
+  --gold: #d4a843;
+  --gold2: #f0c96a;
+  --gold-dim: rgba(212,168,67,0.12);
+  --gold-glow: rgba(212,168,67,0.06);
+  --text: #ede8de;
+  --text2: #9a9080;
+  --text3: #6a6050;
+  --green: #4a9e68;
+  --green-dim: rgba(74,158,104,0.15);
+  --red: #c04838;
+  --red-dim: rgba(192,72,56,0.15);
+  --blue: #4878c0;
+  --blue-dim: rgba(72,120,192,0.15);
+  --amber: #c88820;
+  --amber-dim: rgba(200,136,32,0.15);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Mulish', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Noise texture */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── TOP ─────────────────────────────────────── */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 2rem;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: rgba(19,18,15,0.95);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.brand-mark {
+  width: 34px; height: 34px;
+  border: 1.5px solid var(--gold);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+  color: var(--gold);
+}
+
+.brand-name {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.brand-name em {
+  font-style: italic;
+  color: var(--gold);
+}
+
+.top-progress {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  max-width: 280px;
+  margin: 0 2rem;
+}
+
+.track {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold2));
+  border-radius: 99px;
+  transition: width 0.6s cubic-bezier(.4,0,.2,1);
+}
+
+.top-pct {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text3);
+  min-width: 32px;
+}
+
+.top-step {
+  font-size: 0.73rem;
+  color: var(--text3);
+  font-style: italic;
+}
+
+/* ── STEPPER ─────────────────────────────────── */
+.stepper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  padding: 1.4rem 2rem 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.stepper::-webkit-scrollbar { display: none; }
+
+.st-node {
+  display: flex;
+  align-items: center;
+}
+
+.st-dot {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border2);
+  background: var(--panel);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.62rem;
+  font-family: 'DM Mono', monospace;
+  color: var(--text3);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.st-dot.active {
+  border-color: var(--gold);
+  background: var(--gold-dim);
+  color: var(--gold);
+  box-shadow: 0 0 12px var(--gold-dim);
+}
+
+.st-dot.done {
+  border-color: var(--green);
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.st-dot.unlocked {
+  border-color: var(--border2);
+  color: var(--text2);
+  cursor: pointer;
+}
+
+.st-dot.locked {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.st-line {
+  width: 24px;
+  height: 1px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.st-line.done { background: var(--green); opacity: 0.5; }
+
+/* ── SHELL ───────────────────────────────────── */
+.shell {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 5rem;
+}
+
+/* ── QUESTION CARD ───────────────────────────── */
+.q-wrap {
+  animation: rise 0.35s cubic-bezier(.4,0,.2,1);
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.q-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.q-heading {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: 1.75rem;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  margin-bottom: 0.4rem;
+}
+
+.q-sub {
+  font-size: 0.83rem;
+  color: var(--text2);
+  line-height: 1.55;
+  font-weight: 300;
+  margin-bottom: 1.6rem;
+}
+
+/* ── ALERT BANNER ────────────────────────────── */
+.alert-banner {
+  display: none;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+  border: 1px solid;
+}
+
+.alert-banner.show { display: flex; }
+.alert-banner.warn { background: var(--amber-dim); border-color: rgba(200,136,32,0.3); color: #e0a040; }
+.alert-banner.danger { background: var(--red-dim); border-color: rgba(192,72,56,0.3); color: #e07060; }
+.alert-banner.info { background: var(--blue-dim); border-color: rgba(72,120,192,0.3); color: #80a8e8; }
+
+/* ── CATEGORY CARDS ──────────────────────────── */
+.cat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1.4rem;
+}
+
+.cat-card {
+  border: 1.5px solid var(--border2);
+  border-radius: 14px;
+  padding: 1.1rem 1rem;
+  cursor: pointer;
+  background: var(--panel);
+  transition: all 0.18s;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+}
+
+.cat-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--gold-glow);
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+
+.cat-card:hover { border-color: var(--gold); transform: translateY(-2px); }
+.cat-card:hover::before { opacity: 1; }
+
+.cat-card.selected {
+  border-color: var(--gold);
+  background: var(--card);
+  box-shadow: 0 0 0 1px var(--gold), 0 4px 20px rgba(212,168,67,0.1);
+}
+
+.cat-card.selected::before { opacity: 1; }
+
+.cat-card-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  position: relative;
+}
+
+.cat-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.cat-body { flex: 1; }
+
+.cat-label {
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.cat-desc {
+  font-size: 0.73rem;
+  color: var(--text3);
+  margin-top: 0.2rem;
+  line-height: 1.4;
+  font-weight: 300;
+}
+
+.cat-sel-mark {
+  position: absolute;
+  top: 0.6rem; right: 0.6rem;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.6rem;
+  color: transparent;
+  transition: all 0.15s;
+}
+
+.cat-card.selected .cat-sel-mark {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #000;
+}
+
+/* ── DETAIL CHIPS ────────────────────────────── */
+.details-panel {
+  display: none;
+  animation: expandIn 0.28s cubic-bezier(.4,0,.2,1);
+  margin-bottom: 1.25rem;
+}
+
+.details-panel.open { display: block; }
+
+@keyframes expandIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.details-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.details-label::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 1px;
+  background: var(--gold);
+  opacity: 0.5;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.9rem;
+  border: 1.5px solid var(--border2);
+  border-radius: 99px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  background: var(--panel);
+  color: var(--text2);
+  transition: all 0.14s;
+  user-select: none;
+}
+
+.chip:hover { border-color: var(--gold); color: var(--text); }
+
+.chip.on {
+  background: var(--card);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.chip-x {
+  font-size: 0.55rem;
+  opacity: 0;
+  transition: opacity 0.14s;
+  line-height: 1;
+}
+
+.chip.on .chip-x { opacity: 0.7; }
+
+/* ── TEXT INPUT ──────────────────────────────── */
+.text-field {
+  width: 100%;
+  background: var(--panel);
+  border: 1.5px solid var(--border2);
+  border-radius: 12px;
+  padding: 0.85rem 1.1rem;
+  font-family: 'Mulish', sans-serif;
+  font-size: 0.88rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+  resize: vertical;
+}
+
+.text-field:focus { border-color: var(--gold); }
+.text-field::placeholder { color: var(--text3); }
+
+/* ── SPEC FIELDS (medidas/quantidades) ──────── */
+.spec-panel {
+  margin-top: 1.4rem;
+  padding: 1.2rem;
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+}
+
+.spec-panel-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.spec-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.spec-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.spec-field.full { grid-column: 1 / -1; }
+
+.spec-label {
+  font-size: 0.75rem;
+  color: var(--text2);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.spec-unit {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--gold);
+  background: var(--gold-dim);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.spec-input {
+  background: var(--panel);
+  border: 1.5px solid var(--border2);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  font-family: 'Mulish', sans-serif;
+  font-size: 0.85rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+  resize: vertical;
+}
+
+.spec-input:focus { border-color: var(--gold); }
+.spec-input::placeholder { color: var(--text3); }
+
+/* ── UNLOCKED QUESTION BADGE ─────────────────── */
+.unlock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--green);
+  font-family: 'DM Mono', monospace;
+  background: var(--green-dim);
+  border: 1px solid rgba(74,158,104,0.3);
+  padding: 0.3rem 0.75rem;
+  border-radius: 99px;
+  margin-bottom: 1.2rem;
+  animation: pulse-in 0.4s ease;
+}
+
+@keyframes pulse-in {
+  0% { opacity: 0; transform: scale(0.9); }
+  60% { transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* ── FOOTER NAV ──────────────────────────────── */
+.q-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--border);
+}
+
+.btn {
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.72rem 1.6rem;
+  border-radius: 10px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.18s;
+  letter-spacing: -0.01em;
+}
+
+.btn-primary {
+  background: var(--gold);
+  color: #0a0900;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--gold2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(212,168,67,0.25);
+}
+
+.btn-primary:disabled { opacity: 0.3; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text3);
+  border: 1px solid var(--border2);
+}
+
+.btn-ghost:hover { color: var(--text); border-color: var(--border2); background: var(--panel); }
+
+.skip-btn {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 0.78rem;
+  cursor: pointer;
+  font-family: 'Mulish', sans-serif;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.skip-btn:hover { color: var(--text2); }
+
+/* ── RESULT ──────────────────────────────────── */
+.result-wrap { animation: rise 0.4s ease; }
+
+.result-hero {
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 2rem;
+  margin-bottom: 1.25rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.result-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, var(--gold-dim) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.result-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.6rem;
+}
+
+.result-title {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: 2.2rem;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  margin-bottom: 0.6rem;
+}
+
+.result-title em { font-style: italic; color: var(--gold); }
+
+.result-sub {
+  font-size: 0.82rem;
+  color: var(--text2);
+  font-weight: 300;
+}
+
+/* Section cards */
+.section-card {
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+
+.section-head h3 {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text2);
+}
+
+.section-body { padding: 1.25rem; }
+
+/* Briefing rows */
+.brief-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 0.5rem 1rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+
+.brief-row:last-child { border: none; }
+.brief-key { color: var(--text3); font-weight: 300; }
+.brief-val { color: var(--text); font-weight: 600; }
+
+/* Alerts list */
+.alert-list { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.alert-item {
+  display: flex;
+  gap: 0.7rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  border: 1px solid;
+}
+
+.alert-item.high { background: var(--red-dim); border-color: rgba(192,72,56,0.25); color: #e08070; }
+.alert-item.med  { background: var(--amber-dim); border-color: rgba(200,136,32,0.25); color: #d0a050; }
+.alert-item.low  { background: var(--green-dim); border-color: rgba(74,158,104,0.25); color: #70c090; }
+
+/* AI box */
+.ai-box {
+  background: #0a0908;
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.ai-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.ai-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--gold-dim);
+  color: var(--gold);
+  border: 1px solid rgba(212,168,67,0.3);
+  padding: 3px 10px;
+  border-radius: 99px;
+}
+
+.ai-title {
+  font-family: 'Fraunces', serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ai-body {
+  font-size: 0.84rem;
+  line-height: 1.8;
+  color: rgba(237,232,222,0.75);
+  white-space: pre-wrap;
+}
+
+.loading-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--text3);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.blink-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  animation: blink 1.2s infinite;
+}
+
+@keyframes blink {
+  0%,100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+
+/* Export */
+.export-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-dark {
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 0.7rem 1.4rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.18s;
+}
+
+.btn-dark:hover { background: var(--card); border-color: var(--gold); }
+.btn-gold { background: var(--gold); color: #000; border: none; }
+.btn-gold:hover { background: var(--gold2); }
+
+@media (max-width: 600px) {
+  .cat-grid { grid-template-columns: 1fr; }
+  .result-title { font-size: 1.6rem; }
+  .top-progress, .top-step { display: none; }
+  .brief-row { grid-template-columns: 1fr; }
+}
+
+/* ── DYNAMIC ITEM ENGINE ─────────────────────────── */
+.dyn-wrap { animation: rise 0.35s cubic-bezier(.4,0,.2,1); }
+
+.dyn-item {
+  background: var(--card);
+  border: 1.5px solid var(--border2);
+  border-radius: 14px;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+  transition: border-color 0.18s;
+}
+.dyn-item:focus-within { border-color: var(--gold); }
+
+.dyn-head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.8rem 1rem;
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+}
+
+.dyn-num {
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  background: var(--gold);
+  color: #000;
+  font-family: 'DM Mono', monospace;
+  font-weight: 500;
+  font-size: 0.7rem;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.dyn-title-wrap { flex: 1; min-width: 0; }
+.dyn-title {
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dyn-summary {
+  font-size: 0.7rem;
+  color: var(--text3);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dyn-btns { display: flex; gap: 0.3rem; }
+.dyn-btn {
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: var(--panel);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem;
+  transition: all 0.13s;
+  color: var(--text2);
+}
+.dyn-btn:hover { background: var(--border); color: var(--text); }
+.dyn-btn.del:hover { background: var(--red-dim); border-color: rgba(192,72,56,0.4); color: #e08070; }
+.dyn-btn.dup:hover { background: var(--blue-dim); border-color: rgba(72,120,192,0.4); color: #80a8e8; }
+
+.dyn-chevron { font-size: 0.6rem; color: var(--text3); transition: transform 0.2s; margin-left: 2px; }
+.dyn-item.collapsed .dyn-chevron { transform: rotate(-90deg); }
+.dyn-item.collapsed .dyn-body { display: none; }
+
+.dyn-body {
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.dyn-field { display: flex; flex-direction: column; gap: 0.3rem; }
+.dyn-field.s2 { grid-column: span 2; }
+.dyn-field.s3 { grid-column: 1 / -1; }
+
+.dyn-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.dyn-unit {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  background: var(--gold-dim);
+  color: var(--gold);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.dyn-input, .dyn-select, .dyn-textarea {
+  background: var(--panel);
+  border: 1.5px solid var(--border2);
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  font-family: 'Mulish', sans-serif;
+  font-size: 0.85rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+.dyn-input:focus, .dyn-select:focus, .dyn-textarea:focus { border-color: var(--gold); }
+.dyn-input::placeholder, .dyn-textarea::placeholder { color: var(--text3); }
+.dyn-textarea { resize: vertical; min-height: 60px; }
+.dyn-select { appearance: none; cursor: pointer; }
+
+.dyn-chips { grid-column: 1 / -1; }
+.dyn-chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.2rem; }
+.dyn-chip {
+  padding: 0.28rem 0.7rem;
+  border-radius: 99px;
+  border: 1.5px solid var(--border2);
+  font-size: 0.74rem;
+  cursor: pointer;
+  background: var(--panel);
+  color: var(--text3);
+  transition: all 0.13s;
+  user-select: none;
+}
+.dyn-chip:hover { border-color: var(--gold); color: var(--text); }
+.dyn-chip.on { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+
+.dyn-add-btn {
+  width: 100%;
+  border: 1.5px dashed var(--border2);
+  background: transparent;
+  border-radius: 12px;
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  color: var(--text3);
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 0.82rem;
+  transition: all 0.15s;
+  margin-top: 0.5rem;
+}
+.dyn-add-btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+
+.dyn-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  margin-bottom: 1.25rem;
+  font-size: 0.75rem;
+  color: var(--text3);
+}
+.dyn-totals strong { color: var(--gold); font-family: 'DM Mono', monospace; font-size: 0.8rem; }
+
+/* result table */
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  margin-bottom: 0.25rem;
+}
+.result-table th {
+  text-align: left;
+  padding: 0.45rem 0.85rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--border);
+}
+.result-table td {
+  padding: 0.55rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  line-height: 1.4;
+  color: var(--text);
+}
+.result-table tr:last-child td { border-bottom: none; }
+.result-table tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+.result-table .td-n { color: var(--text3); font-family: 'DM Mono', monospace; font-size: 0.7rem; width: 28px; }
+.result-table .td-dim { color: var(--gold); font-family: 'DM Mono', monospace; font-size: 0.78rem; }
+.chip-tag { display:inline-block; background:var(--border); border-radius:4px; padding:1px 5px; font-size:0.66rem; margin:1px 2px 1px 0; color:var(--text2); }
+
+@media (max-width:600px) {
+  .dyn-body { grid-template-columns: 1fr; }
+  .dyn-field.s2, .dyn-field.s3 { grid-column: 1 / -1; }
+}
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="top">
+  <div class="brand">
+    <div class="brand-mark">⌂</div>
+    <div class="brand-name">Obra<em>Check</em></div>
+  </div>
+  <div class="top-progress">
+    <div class="track"><div class="fill" id="fillBar" style="width:0%"></div></div>
+    <div class="top-pct" id="pctLabel">0%</div>
+  </div>
+  <div class="top-step" id="stepLabel">Início</div>
+</div>
+
+<!-- Stepper dots -->
+<div class="stepper" id="stepper"></div>
+
+<!-- Main -->
+<div class="shell" id="shell"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// QUESTION TREE
+// ══════════════════════════════════════════════════════
+// unlocksIf: fn(answers) => bool — question only appears if this returns true
+// cards: main visual choices (single or multi)
+//   each card can have: details[] — chips unlocked when card is selected
+// textInputs: free-text fields appended after cards
+// alert: fn(answers) => {type, msg} | null — contextual banner
+
+const TREE = [
+
+  // ─── 0: Tipo de reforma ───
+  {
+    id: 'tipo',
+    label: 'Tipo de reforma',
+    heading: 'Qual tipo de reforma?',
+    sub: 'Escolha a categoria principal. Isso define quais perguntas serão desbloqueadas.',
+    multi: false,
+    cards: [
+      {
+        id: 'simples', icon: '🖌️', label: 'Reforma Simples',
+        desc: 'Pintura, revestimentos, troca de louças e torneiras',
+        details: ['Pintura interna', 'Pintura externa', 'Troca de pisos', 'Troca de revestimentos', 'Troca de louças sanitárias', 'Troca de torneiras/registros', 'Troca de luminárias']
+      },
+      {
+        id: 'banheiro', icon: '🚿', label: 'Banheiro / Cozinha',
+        desc: 'Quebra e reconstrução com novos revestimentos e instalações',
+        details: ['Demolição completa', 'Nova hidráulica', 'Nova elétrica', 'Novos revestimentos', 'Nova louça e metais', 'Impermeabilização', 'Box / Vidros']
+      },
+      {
+        id: 'estrutural', icon: '🏗️', label: 'Estrutural',
+        desc: 'Abertura/fechamento de vãos, lajes, fundações',
+        details: ['Abertura de parede', 'Fechamento de vão', 'Reforço de laje', 'Fundação/recalque', 'Demolição de alvenaria', 'Nova alvenaria']
+      },
+      {
+        id: 'completa', icon: '🏠', label: 'Reforma Completa',
+        desc: 'Todo o imóvel — múltiplos ambientes e especialidades',
+        details: ['Projeto de arquitetura', 'Demolições', 'Elétrica completa', 'Hidráulica completa', 'Todos os revestimentos', 'Todos os ambientes', 'Marcenaria sob medida', 'Pintura geral']
+      },
+      {
+        id: 'comercial', icon: '🏬', label: 'Comercial',
+        desc: 'Loja, escritório, restaurante, clínica',
+        details: ['Adequação AVCB', 'Acessibilidade PcD', 'Instalação de sprinklers', 'Forro técnico', 'Piso elevado', 'Infraestrutura de rede', 'Fachada comercial']
+      },
+      {
+        id: 'acabamento', icon: '✨', label: 'Acabamento / Upgrade',
+        desc: 'Marcenaria, iluminação, decoração, piso sobre piso',
+        details: ['Marcenaria embutida', 'Iluminação cênica', 'Piso sobre piso', 'Sanca de gesso', 'Papel de parede', 'Automação', 'Paisagismo interno']
+      }
+    ],
+    alert: (a) => {
+      if (a.tipo === 'estrutural') return { type: 'danger', msg: '⚠️ Serviços estruturais exigem ART ou RRT de responsável técnico. Sem isso, a obra é irregular.' };
+      if (a.tipo === 'comercial') return { type: 'warn', msg: '⚠️ Estabelecimentos comerciais exigem AVCB, Habite-se e aprovação municipal conforme atividade.' };
+      return null;
+    }
+  },
+
+
+  // ─── 1: Método Construtivo ───
+  {
+    id: 'metodo',
+    label: 'Método Construtivo',
+    heading: 'Qual o método construtivo?',
+    sub: 'Define os materiais, técnicas e cuidados específicos de toda a obra. Selecione o sistema existente ou o novo a ser adotado.',
+    multi: false,
+    cards: [
+      {
+        id: 'alvenaria_ceramica', icon: '🧱', label: 'Alvenaria — Tijolo Cerâmico',
+        desc: 'Tijolo furado ou maciço com argamassa — o método mais comum no Brasil',
+        details: ['Tijolo furado 8 furos', 'Tijolo maciço', 'Bloco cerâmico estrutural', 'Reboco tradicional', 'Chapisco + emboço + reboco', 'Regularização com massa única', 'Verga e contraverga nos vãos']
+      },
+      {
+        id: 'bloco_concreto', icon: '⬛', label: 'Bloco de Concreto',
+        desc: 'Bloco estrutural ou de vedação em concreto',
+        details: ['Bloco de concreto vedação', 'Bloco estrutural (modulado)', 'Bloco aparente (sem reboco)', 'Bloco com argamassa estrutural', 'Junta seca (sem argamassa)', 'Graute nos furos', 'Armação interna (bloco estrutural)']
+      },
+      {
+        id: 'concreto_armado', icon: '🏗️', label: 'Concreto Armado',
+        desc: 'Pilares, vigas e lajes em concreto com armação de aço',
+        details: ['Estrutura convencional (pilares + vigas + laje)', 'Laje nervurada', 'Laje protendida', 'Paredes de concreto moldado no local', 'Fôrma de madeira', 'Fôrma de alumínio (construção industrializada)', 'Concreto aparente (sem reboco)']
+      },
+      {
+        id: 'paredes_concreto', icon: '🏢', label: 'Paredes de Concreto',
+        desc: 'Sistema construtivo industrializado — paredes moldadas no local',
+        details: ['Fôrma de alumínio (sistema tunnel form)', 'Fôrma plástica reutilizável', 'Concreto autoadensável', 'Paredes portantes (sem pilares)', 'Lajes moldadas junto às paredes', 'Acabamento direto (sem reboco)', 'Rasgos para instalações pré-definidos']
+      },
+      {
+        id: 'wood_frame', icon: '🪵', label: 'Wood Frame',
+        desc: 'Estrutura em montantes de madeira tratada com vedação em OSB e gesso',
+        details: ['Montantes de madeira tratada (pinus / SPF)', 'Painéis OSB externos', 'Placa cimentícia na fachada', 'Gesso acartonado interno', 'Lã de vidro ou lã de rocha no painel', 'Barreira de vapor', 'Membrana impermeabilizante externa (housewrap)', 'Fundação radier ou baldrame', 'Instalações embutidas no painel']
+      },
+      {
+        id: 'steel_frame', icon: '🔩', label: 'Steel Frame',
+        desc: 'Estrutura em perfis de aço galvanizado leve (Light Steel Framing)',
+        details: ['Perfis de aço galvanizado (montante + guia)', 'Chapa de OSB ou cimentícia', 'Gesso acartonado interno', 'Lã de vidro ou lã de rocha no painel', 'Barreira de vapor', 'Cobertura em telha termoacústica ou cerâmica', 'Radier ou baldrame', 'Instalações embutidas no painel', 'Revestimento externo em EIFS / cimentícia / ACM']
+      },
+      {
+        id: 'pre_moldado', icon: '🏭', label: 'Pré-moldado / Pré-fabricado',
+        desc: 'Elementos estruturais produzidos em fábrica e montados no canteiro',
+        details: ['Painéis de concreto pré-moldado', 'Lajes pré-moldadas (treliça)', 'Vigas e pilares pré-fabricados', 'Painéis de EPS (isopor estrutural)', 'Módulos volumétricos (container / modular)', 'Painéis de concreto celular (AAC / Ytong)', 'Alvenaria estrutural pré-moldada']
+      },
+      {
+        id: 'misto', icon: '🔀', label: 'Sistema Misto',
+        desc: 'Combinação de dois ou mais métodos no mesmo projeto',
+        details: ['Estrutura convencional + vedação em drywall', 'Alvenaria existente + ampliação em steel frame', 'Concreto armado + fachada ventilada', 'Pilares metálicos + vedação em bloco', 'Madeira + concreto (misto)', 'Estrutura metálica + fechamento em alvenaria']
+      }
+    ],
+    alert: (a) => {
+      if (a.metodo === 'wood_frame') return { type: 'info', msg: 'ℹ️ Wood Frame exige controle rigoroso de umidade, barreira de vapor e detalhamento correto das juntas. Contrate profissional com experiência no sistema.' };
+      if (a.metodo === 'steel_frame') return { type: 'info', msg: 'ℹ️ Steel Frame (LSF) requer projeto estrutural específico, memorial de cálculo e execução por equipe treinada no sistema.' };
+      if (a.metodo === 'paredes_concreto') return { type: 'warn', msg: '⚠️ Paredes de concreto exigem projeto executivo completo e aprovação antes do início. Alterações pós-concretagem são muito difíceis.' };
+      if (a.metodo === 'concreto_armado') return { type: 'warn', msg: '⚠️ Estrutura de concreto armado exige ART de engenheiro estrutural. Qualquer intervenção em elemento estrutural existente precisa de laudo técnico.' };
+      if (a.metodo === 'pre_moldado') return { type: 'info', msg: 'ℹ️ Sistemas pré-moldados exigem projeto de montagem específico e guindaste ou equipamento de içamento. Verifique acesso ao terreno.' };
+      return null;
+    }
+  },
+
+  // ─── 1: Situação do imóvel ───
+  {
+    id: 'situacao',
+    label: 'Situação',
+    heading: 'Como está o imóvel hoje?',
+    sub: 'O estado atual define os riscos ocultos e o nível de diagnóstico necessário.',
+    multi: false,
+    cards: [
+      {
+        id: 'habitado', icon: '🏡', label: 'Habitado',
+        desc: 'Mora alguém durante a obra',
+        details: ['Obra por fases', 'Isolamento de áreas', 'Controle de pó/ruído', 'Proteção de móveis', 'Horários restritivos']
+      },
+      {
+        id: 'vazio', icon: '🔑', label: 'Vazio',
+        desc: 'Desocupado, maior liberdade de execução',
+        details: []
+      },
+      {
+        id: 'degradado', icon: '🏚️', label: 'Degradado / Antigo',
+        desc: 'Problemas visíveis, manutenção atrasada',
+        details: ['Vistoria elétrica', 'Vistoria hidráulica', 'Vistoria estrutural', 'Mapeamento de infiltrações', 'Laudo de umidade']
+      },
+      {
+        id: 'inacabado', icon: '🔧', label: 'Obra inacabada',
+        desc: 'Construção ou reforma parada anteriormente',
+        details: ['Diagnóstico da obra parada', 'Laudo técnico', 'Levantamento do que foi feito', 'Avaliação de materiais já adquiridos']
+      }
+    ],
+    alert: (a) => {
+      if (a.situacao === 'degradado') return { type: 'warn', msg: '⚠️ Imóveis degradados frequentemente têm surpresas ocultas. Reserve 15–25% a mais no orçamento para imprevistos.' };
+      if (a.situacao === 'inacabado') return { type: 'warn', msg: '⚠️ Obra inacabada precisa de diagnóstico técnico antes de retomar. Materiais e execuções anteriores podem estar comprometidos.' };
+      if (a.situacao === 'habitado') return { type: 'info', msg: 'ℹ️ Com moradores no local, planeje a obra em etapas e garanta rotas de acesso e ventilação seguras.' };
+      return null;
+    }
+  },
+
+  // ─── 2: Ambientes (desbloqueado por qualquer tipo) ───
+  {
+    id: 'ambientes',
+    label: 'Ambientes',
+    heading: 'Quais ambientes serão reformados?',
+    sub: 'Selecione as categorias e detalhe os serviços dentro de cada uma.',
+    multi: true,
+    cards: [
+      {
+        id: 'social', icon: '🛋️', label: 'Área Social',
+        desc: 'Sala, jantar, hall, corredor',
+        details: ['Sala de estar', 'Sala de jantar', 'Hall de entrada', 'Corredor', 'Escada']
+      },
+      {
+        id: 'cozinha', icon: '🍳', label: 'Cozinha',
+        desc: 'Cozinha e/ou área de serviço',
+        details: ['Cozinha completa', 'Copa / Lavanderia', 'Despensa', 'Churrasqueira', 'Espaço gourmet']
+      },
+      {
+        id: 'banheiros', icon: '🚿', label: 'Banheiros',
+        desc: 'Banheiros, lavabos e suíte',
+        details: ['Banheiro social', 'Suíte master', 'Lavabo', 'Banheiro de serviço', 'Banheiro PcD']
+      },
+      {
+        id: 'quartos', icon: '🛏️', label: 'Quartos',
+        desc: 'Dormitórios e closet',
+        details: ['Quarto casal', 'Quarto filho(s)', 'Closet / Dressing', 'Quarto de hóspedes', 'Quarto de bebê']
+      },
+      {
+        id: 'externa', icon: '🌿', label: 'Área Externa',
+        desc: 'Fachada, varanda, garagem, jardim',
+        details: ['Fachada', 'Varanda / Sacada', 'Garagem', 'Jardim / Paisagismo', 'Piscina', 'Área de lazer']
+      },
+      {
+        id: 'escritorio', icon: '💻', label: 'Escritório / Studio',
+        desc: 'Home office, ateliê, sala de jogos',
+        details: ['Home office', 'Sala de reunião', 'Ateliê / Studio', 'Sala de jogos', 'Biblioteca']
+      }
+    ]
+  },
+
+  // ─── 3: Instalações (desbloqueado se tipo != simples/acabamento) ───
+  {
+    id: 'instalacoes',
+    label: 'Instalações',
+    heading: 'Quais instalações serão mexidas?',
+    sub: 'Instalações exigem projetos específicos e responsáveis técnicos.',
+    multi: true,
+    unlocksIf: (a) => a.tipo && !['simples','acabamento'].includes(a.tipo),
+    cards: [
+      {
+        id: 'eletrica', icon: '⚡', label: 'Elétrica',
+        desc: 'Fiação, quadro, tomadas, pontos de luz',
+        details: ['Troca de quadro elétrico', 'Nova fiação completa', 'Pontos de tomada 220V', 'Infraestrutura ar-condicionado', 'Iluminação cênica', 'Automação elétrica', 'Rede lógica/cabeada', 'Projeto SPDA (para-raios)']
+      },
+      {
+        id: 'hidraulica', icon: '🚿', label: 'Hidráulica',
+        desc: 'Encanamento, esgoto, ralos, registros',
+        details: ['Água fria', 'Água quente', 'Esgoto sanitário', 'Águas pluviais', 'Reuso de água', 'Aquecimento solar', 'Aquecedor a gás', 'Ponto de gás']
+      },
+      {
+        id: 'climatizacao', icon: '❄️', label: 'Climatização',
+        desc: 'Ar-condicionado, ventilação, exaustão',
+        details: ['Split por ambiente', 'VRF / VRV central', 'Exaustão banheiros', 'Exaustão cozinha', 'Ventilação mecânica', 'Duto de ar']
+      },
+      {
+        id: 'impermeabilizacao', icon: '💧', label: 'Impermeabilização',
+        desc: 'Lajes, banheiros, fachadas, subsolos',
+        details: ['Laje de cobertura', 'Laje de piso molhado', 'Fachada / muros', 'Jardim sobre laje', 'Subsolo / Pavimento']
+      }
+    ],
+    alert: (a) => {
+      if (a.instalacoes_sel?.includes('eletrica')) return { type: 'warn', msg: '⚠️ Instalação elétrica deve seguir NBR 5410. Exija laudo de conformidade (ART) ao final da obra.' };
+      return null;
+    }
+  },
+
+  // ─── 4: Restrições legais ───
+  {
+    id: 'restricoes',
+    label: 'Restrições',
+    heading: 'Há restrições no local?',
+    sub: 'Restrições legais ou condominiais podem embargar a obra se ignoradas.',
+    multi: true,
+    cards: [
+      {
+        id: 'condominio', icon: '🏢', label: 'Condomínio',
+        desc: 'Regras de horário, material e aprovação',
+        details: ['Horário restrito (7h–17h)', 'Uso obrigatório de elevador de serviço', 'Aprovação da administração', 'Seguro de obra exigido', 'ART obrigatória para o síndico']
+      },
+      {
+        id: 'tombado', icon: '🏛️', label: 'Imóvel tombado',
+        desc: 'Patrimônio histórico com proteção legal',
+        details: ['Aprovação IPHAN', 'Aprovação órgão estadual', 'Aprovação prefeitura', 'Laudo de conservação', 'Uso de materiais compatíveis']
+      },
+      {
+        id: 'alvara', icon: '📋', label: 'Alvará necessário',
+        desc: 'Prefeitura exige aprovação prévia',
+        details: ['Projeto arquitetônico aprovado', 'Projetos complementares', 'Anotação de responsabilidade', 'Taxa de aprovação']
+      },
+      {
+        id: 'sem_restricoes', icon: '✅', label: 'Sem restrições',
+        desc: 'Imóvel regular, sem limitações conhecidas',
+        details: []
+      }
+    ],
+    alert: (a) => {
+      if (a.restricoes_sel?.includes('tombado')) return { type: 'danger', msg: '🚨 Imóvel tombado: qualquer intervenção sem aprovação prévia é crime. Consulte IPHAN ou secretaria de patrimônio antes de qualquer ação.' };
+      if (a.restricoes_sel?.includes('condominio')) return { type: 'warn', msg: '⚠️ Solicite por escrito a aprovação da administração do condomínio. Guarde o documento.' };
+      return null;
+    }
+  },
+
+  // ─── 5: Projeto ───
+  {
+    id: 'projeto',
+    label: 'Projeto',
+    heading: 'Existe projeto de arquitetura?',
+    sub: 'A presença de um projeto impacta diretamente no prazo, custo e risco da obra.',
+    multi: false,
+    cards: [
+      {
+        id: 'completo', icon: '📐', label: 'Sim — completo',
+        desc: 'Plantas, cortes, especificações e detalhamentos prontos',
+        details: []
+      },
+      {
+        id: 'parcial', icon: '📄', label: 'Sim — parcial',
+        desc: 'Algumas definições prontas, outras em aberto',
+        details: ['Plantas de layout', 'Projeto hidráulico', 'Projeto elétrico', 'Projeto de marcenaria', 'Projeto de iluminação']
+      },
+      {
+        id: 'sem_projeto', icon: '💡', label: 'Não — só a ideia',
+        desc: 'Preciso de assessoria ou projeto',
+        details: ['Preciso de arquiteto', 'Tenho referências visuais', 'Tenho lista de necessidades', 'Quero projeto executivo completo', 'Quero só um anteprojeto']
+      },
+      {
+        id: 'execucao_direta', icon: '🔧', label: 'Não — execução direta',
+        desc: 'Quero executar sem projeto formal',
+        details: []
+      }
+    ],
+    alert: (a) => {
+      if (a.projeto === 'execucao_direta') return { type: 'warn', msg: '⚠️ Sem projeto, o risco de retrabalho e estouro de orçamento aumenta significativamente. Recomendamos ao menos um croqui aprovado.' };
+      if (a.projeto === 'sem_projeto') return { type: 'info', msg: 'ℹ️ Contratar um arquiteto antes da obra reduz custos em média 10–20% e evita erros de execução.' };
+      return null;
+    }
+  },
+
+  // ─── 6: Orçamento ───
+  {
+    id: 'orcamento',
+    label: 'Orçamento',
+    heading: 'Qual a verba disponível?',
+    sub: 'Faixa total estimada — inclua materiais, mão de obra e margem de imprevistos.',
+    multi: false,
+    cards: [
+      { id: 'ate20', icon: '💸', label: 'Até R$ 20 mil', desc: 'Pequenas reformas pontuais', details: [] },
+      { id: 'ate50', icon: '💰', label: 'R$ 20–50 mil', desc: 'Reforma de 1 ou 2 ambientes', details: [] },
+      { id: 'ate150', icon: '🏦', label: 'R$ 50–150 mil', desc: 'Reforma ampla ou modernização', details: [] },
+      { id: 'ate400', icon: '💎', label: 'R$ 150–400 mil', desc: 'Projeto sofisticado, materiais premium', details: [] },
+      { id: 'acima400', icon: '🏆', label: 'Acima de R$ 400 mil', desc: 'Alto padrão ou imóvel grande', details: [] },
+      {
+        id: 'adefinir', icon: '❓', label: 'A definir',
+        desc: 'Preciso de orçamento para decidir',
+        details: ['Já tenho memorial descritivo', 'Preciso elaborar o memorial', 'Quero 3 orçamentos comparativos', 'Quero consultoria de viabilidade']
+      }
+    ]
+  },
+
+  // ─── 7: Prazo ───
+  {
+    id: 'prazo',
+    label: 'Prazo',
+    heading: 'Qual a urgência para início?',
+    sub: 'O prazo real afeta o custo, a equipe disponível e a qualidade do planejamento.',
+    multi: false,
+    cards: [
+      {
+        id: 'urgente', icon: '🚨', label: 'Urgente — já!',
+        desc: 'Precisa iniciar em menos de 30 dias',
+        details: ['Motivo: vazamento/dano', 'Motivo: venda/locação', 'Motivo: prazo contratual', 'Motivo: mudança iminente']
+      },
+      { id: 'breve', icon: '📅', label: '1 a 3 meses', desc: 'Tempo para organizar fornecedores', details: [] },
+      { id: 'planejado', icon: '🗓️', label: '3 a 6 meses', desc: 'Margem confortável de planejamento', details: [] },
+      { id: 'flexivel', icon: '⏳', label: 'Sem pressa', desc: 'Projeto pode amadurecer com calma', details: [] }
+    ],
+    alert: (a) => {
+      if (a.prazo === 'urgente') return { type: 'warn', msg: '⚠️ Início urgente pode encarecer 10–30% pelo custo de mobilização acelerada e falta de cotações comparativas.' };
+      return null;
+    }
+  },
+
+  // ─── 8: Necessidades especiais (desbloqueado se tipo == completa/comercial) ───
+  {
+    id: 'especiais',
+    label: 'Especiais',
+    heading: 'Há necessidades especiais?',
+    sub: 'Geram requisitos técnicos e podem ser obrigações legais.',
+    multi: true,
+    unlocksIf: (a) => ['completa','comercial','estrutural'].includes(a.tipo),
+    cards: [
+      {
+        id: 'pcd', icon: '♿', label: 'Acessibilidade PcD',
+        desc: 'NBR 9050 — rampas, barras, banheiro acessível',
+        details: ['Rampa de acesso', 'Banheiro adaptado', 'Barras de apoio', 'Piso tátil', 'Elevador ou plataforma', 'Vagas de garagem PcD']
+      },
+      {
+        id: 'idosos', icon: '👴', label: 'Idosos morando',
+        desc: 'Antiderrapante, iluminação, corrimãos',
+        details: ['Piso antiderrapante', 'Corrimão em escadas', 'Iluminação de emergência', 'Barras no banheiro', 'Altura de interruptores ajustada']
+      },
+      {
+        id: 'criancas', icon: '👶', label: 'Crianças',
+        desc: 'Proteções, cantos, tomadas',
+        details: ['Protetor de tomadas', 'Cantos arredondados', 'Proteção de escadas', 'Tela de proteção em janelas', 'Materiais atóxicos']
+      },
+      {
+        id: 'sustentavel', icon: '🌱', label: 'Sustentabilidade',
+        desc: 'Reúso de água, solar, eficiência',
+        details: ['Captação de água da chuva', 'Reúso de água cinza', 'Painel solar fotovoltaico', 'Aquecimento solar', 'Iluminação LED', 'Materiais certificados']
+      },
+      {
+        id: 'automacao', icon: '🤖', label: 'Automação',
+        desc: 'Casa inteligente, IoT, controles',
+        details: ['Iluminação inteligente', 'Cortinas motorizadas', 'Câmeras e alarme', 'Fechadura eletrônica', 'Central de automação', 'Assistente de voz integrado']
+      }
+    ]
+  },
+
+  // ─── 9-14: Dynamic multi-item steps ───
+  { id:'portas', label:'Portas', heading:'Portas — cadastro individual', isDynamic:true, dbKey:'portas',
+    eyebrow:'Esquadrias', sub:'Adicione cada porta separadamente. Cada vão pode ter medidas, material, estilo e ferragens diferentes.',
+    addLabel:'+ Nova porta', defaultTitle:(i)=>`Porta ${i+1}`,
+    fields:[
+      {id:'ambiente',       label:'Ambiente / Localização', type:'text', placeholder:'Ex: Quarto 01, Banheiro social, Entrada principal', span:2},
+      {id:'tipo',           label:'Tipo de abertura', type:'select', options:['De abrir (1 folha)','De abrir (2 folhas)','De correr (2 folhas)','De correr (4 folhas)','Pivotante','Camarão / Sanfonada','Deslizante embutida','Garagem — basculante','Garagem — deslizante']},
+      {id:'material',       label:'Material da folha', type:'select', options:['Madeira maciça','MDF liso (com primer)','MDF moldada (com primer)','MDF almofadado','HDF fórmica','Alumínio','Alumínio com vidro','Ferro / Aço','Vidro temperado','PVC']},
+      {id:'estilo',         label:'Estilo / Design da porta', type:'select', options:['Lisa (sem detalhes)','Shaker (quadro simples rebaixado)','Painéis elevados (raised panels)','Ovolo / perfil côncavo','Almofadada clássica','Almofadada contemporânea','Com friso horizontal','Com visor de vidro','Brise / veneziana embutida','Rústica aplainada','A definir']},
+      {id:'largura',        label:'Largura', type:'text', placeholder:'80', unit:'cm'},
+      {id:'altura',         label:'Altura',  type:'text', placeholder:'210', unit:'cm'},
+      {id:'qtd',            label:'Quantidade', type:'text', placeholder:'1', unit:'un'},
+      {id:'acabamento',     label:'Acabamento / Cor da folha', type:'text', placeholder:'Ex: Laca branca, verniz natural, laminado madeira', span:2},
+      {id:'batente_tipo',   label:'Batente (marco)', type:'select', options:['Batente sólido madeira maciça','Batente sólido MDF','Batente regulável (split jamb / telescópico)','Batente de alumínio','Batente pré-moldado','Sem batente (reaproveitamento)','A definir']},
+      {id:'batente_esp',    label:'Espessura do batente (parede)', type:'text', placeholder:'Ex: 14 (parede de 14cm)', unit:'cm'},
+      {id:'dobradicas_formato', label:'Formato das dobradiças', type:'select', options:['Quadradas (cantos retos)','Arredondadas (cantos curvos)','Ocultas / invisíveis','Pivô (pivot hinge)','Não se aplica (correr/deslizante)','A definir']},
+      {id:'dobradicas_cor', label:'Acabamento das dobradiças', type:'select', options:['Inox escovado','Inox polido','Preto matte','Dourado / Gold','Bronze','Cromado','Latão','Branco','Cobre','Mesma cor da porta (camuflada)','A definir']},
+      {id:'guarnição',      label:'Guarnição / Casing', type:'select', options:['Sem guarnição','Guarnição lisa reta (flat casing)','Guarnição perfil colonial','Guarnição ovolo / côncava','Guarnição MDF liso pintado','Guarnição madeira maciça','Guarnição com chanfro (bisel)','Guarnição embutida no reboco (clean line)','A definir']},
+      {id:'ferragens',      label:'Ferragens e acessórios', type:'chips', options:['Fechadura tubular','Fechadura rolete','Fechadura elétrica','Biométrica','Puxador inox','Puxador preto','Puxador dourado','Mola aérea (mola de porta)','Batente de piso','Batente de parede','Vista / espelho da fechadura','Corrente de segurança','Olho mágico']},
+      {id:'obs',            label:'Observações', type:'textarea', placeholder:'Bandeirola, vão especial, marco pré-moldado, integração com parede de drywall?', span:3}
+    ]
+  },
+  { id:'janelas', label:'Janelas', heading:'Janelas — cadastro individual', isDynamic:true, dbKey:'janelas',
+    eyebrow:'Esquadrias', sub:'Cadastre cada janela ou conjunto do mesmo padrão com sistema de abertura, medidas e tipo de vidro.',
+    addLabel:'+ Nova janela', defaultTitle:(i)=>`Janela ${i+1}`,
+    fields:[
+      {id:'ambiente', label:'Ambiente / Localização', type:'text', placeholder:'Ex: Sala frente, Quarto 02, Banheiro', span:2},
+      {id:'sistema',  label:'Sistema de abertura', type:'select', options:['Correr 2 folhas','Correr 4 folhas','De abrir 1 folha','De abrir 2 folhas','Maxim-ar','Basculante','Pivotante vertical','Pivotante horizontal','Fixa / Panorâmica','Guilhotina','Veneziana']},
+      {id:'material', label:'Material do caixilho', type:'select', options:['Alumínio branco','Alumínio natural','Alumínio bronze','Alumínio preto','PVC branco','Madeira','Ferro pintado','Sem caixilho (frameless)']},
+      {id:'largura',  label:'Largura total', type:'text', placeholder:'120', unit:'cm'},
+      {id:'altura',   label:'Altura total',  type:'text', placeholder:'120', unit:'cm'},
+      {id:'peitoril', label:'Altura do peitoril', type:'text', placeholder:'90', unit:'cm'},
+      {id:'qtd',      label:'Quantidade', type:'text', placeholder:'1', unit:'un'},
+      {id:'vidro',    label:'Tipo de vidro', type:'select', options:['Liso incolor 4mm','Liso incolor 6mm','Vidro duplo termoacústico','Vidro laminado acústico','Fumê','Bronze','Canelado','Jateado','Espelho','Não se aplica']},
+      {id:'extras',   label:'Extras', type:'chips', options:['Tela mosquiteiro','Grade de ferro','Grade inox','Veneziana embutida','Veneziana externa','Bandeira fixa acima','Peitoril granito','Peitoril porcelanato','Contramarco','Persiana embutida']},
+      {id:'obs',      label:'Observações', type:'textarea', placeholder:'Vão especial, detalhe de arremate, contramarco existente?', span:3}
+    ]
+  },
+  { id:'piso', label:'Piso', heading:'Piso — por ambiente', isDynamic:true, dbKey:'piso',
+    eyebrow:'Revestimentos', sub:'Cadastre cada ambiente separadamente com tipo de piso, área exata e especificações de rejunte e rodapé.',
+    addLabel:'+ Novo ambiente', defaultTitle:(i)=>`Ambiente ${i+1}`,
+    fields:[
+      {id:'ambiente',  label:'Ambiente', type:'text', placeholder:'Ex: Sala de estar, Cozinha, Quarto 01', span:2},
+      {id:'area',      label:'Área', type:'text', placeholder:'18,5', unit:'m²'},
+      {id:'perimetro', label:'Perímetro (rodapé)', type:'text', placeholder:'17,2', unit:'m'},
+      {id:'material',  label:'Material do piso', type:'select', options:['Porcelanato polido','Porcelanato acetinado','Porcelanato mate','Porcelanato texturizado/antiderrap.','Cerâmica esmaltada','Cerâmica antiderrapante','Assoalho madeira maciça','Laminado flutuante','Vinílico LVT clique','Vinílico LVT cola','Manta vinílica','Cimento queimado','Concreto polido','Microcimento','Epóxi','Pedra natural — granito','Pedra natural — mármore','Pedra natural — ardósia','Deck madeira externo','Deck WPC externo','Paver / Pedra intertravada']},
+      {id:'formato',   label:'Formato da peça', type:'select', options:['20×20','30×30','33×33','45×45','60×60','80×80','90×90','60×120','120×60','90×180','120×120','Ripas 10×90','Ripas 15×120','Placa grande formato','Livre / irregular','Não se aplica']},
+      {id:'assentamento',label:'Sentido de assentamento', type:'select', options:['Alinhado / Padrão','Diagonal (45°)','Espinhado (Chevron)','Filetes alternados','Livre / A definir']},
+      {id:'rejunte',   label:'Rejunte', type:'select', options:['Branco','Cinza claro','Cinza escuro','Preto','Bege','Epóxi branco','Epóxi preto','Sem rejunte (retificado junta seca)','A definir']},
+      {id:'rodape',    label:'Rodapé', type:'select', options:['Mesmo material do piso','MDF liso pintado','MDF moldura pintado','Porcelanato','Cerâmica','Madeira natural','Sem rodapé']},
+      {id:'rodape_alt',label:'Altura do rodapé', type:'select', options:['7 cm','10 cm','15 cm','20 cm','Sem rodapé']},
+      {id:'obs',       label:'Observações', type:'textarea', placeholder:'Nível existente, desnível entre ambientes, screed, soleira?', span:3}
+    ]
+  },
+  { id:'pintura', label:'Pintura', heading:'Pintura — por ambiente', isDynamic:true, dbKey:'pintura',
+    eyebrow:'Revestimentos', sub:'Detalhe cada ambiente com tipo de tinta, cor e área de parede e teto separadas.',
+    addLabel:'+ Novo ambiente', defaultTitle:(i)=>`Ambiente ${i+1}`,
+    fields:[
+      {id:'ambiente',   label:'Ambiente', type:'text', placeholder:'Ex: Sala, Quarto 01, Fachada', span:2},
+      {id:'area_parede',label:'Área de parede', type:'text', placeholder:'42', unit:'m²'},
+      {id:'area_teto',  label:'Área de teto',   type:'text', placeholder:'18', unit:'m²'},
+      {id:'tipo_tinta', label:'Tipo de tinta', type:'select', options:['Tinta acrílica standard','Tinta acrílica premium','Tinta semibrilho','Tinta brilhante','Tinta lavável','Tinta texturizada','Tinta epóxi','Tinta silicone (externa)','Elastômero (externa)','Grafiato / Textura acrílica','Verniz madeira','Esmalte metais/madeira','Tinta lousa','Tinta aveludada']},
+      {id:'cor_parede', label:'Cor(es) parede', type:'text', placeholder:'Ex: Branco neve, Cinza claro, SW7015'},
+      {id:'cor_teto',   label:'Cor teto',       type:'text', placeholder:'Ex: Branco gesso, mesmo das paredes'},
+      {id:'demao',      label:'Nº de demãos', type:'select', options:['1 demão','2 demãos','3 demãos','4 demãos (selador + 3)','A definir']},
+      {id:'preparacao', label:'Preparação necessária', type:'chips', options:['Massa corrida PVA','Massa acrílica','Selador','Lixamento geral','Remoção de tinta antiga','Tratamento de trincas','Primer anticorrosão','Fundo preparador']},
+      {id:'acento',     label:'Parede de destaque', type:'chips', options:['Cor diferente','Papel de parede','Cimento queimado','Tijolinho','Madeira / ripado','Nenhuma']},
+      {id:'obs',        label:'Observações', type:'textarea', placeholder:'Tinta de fábrica específica? Cor de rodapé? Faixas?', span:3}
+    ]
+  },
+  { id:'rev_externo', label:'Rev. Externo', heading:'Revestimento externo — por face/área', isDynamic:true, dbKey:'rev_externo',
+    eyebrow:'Revestimentos', sub:'Cadastre cada face da fachada ou área externa com material, área e modo de fixação.',
+    addLabel:'+ Nova face / área', defaultTitle:(i)=>`Face ${i+1}`,
+    unlocksIf:(a)=>a.ambientes_sel?.includes('externa')||['estrutural','completa','comercial'].includes(a.tipo),
+    fields:[
+      {id:'local',     label:'Face / Localização', type:'text', placeholder:'Ex: Fachada frontal, Muro lateral, Varanda', span:2},
+      {id:'area',      label:'Área', type:'text', placeholder:'35', unit:'m²'},
+      {id:'altura_max',label:'Altura máxima', type:'text', placeholder:'4,5', unit:'m'},
+      {id:'material',  label:'Material de revestimento', type:'select', options:['Porcelanato externo','Pedra mineira natural','Ardósia','Granito flameado','Canjiquinha / Seixo','Tijolinho aparente natural','Tijolinho de demolição','Tijolo refratário','Deck vertical WPC','Deck vertical madeira','Ripado madeira','ACM — alumínio composto','Aço corten','Grafiato fino','Grafiato médio','Grafiato rústico','Textura acrílica','Elastômero / Silicone','Pastilha cerâmica','Pastilha vidro','Concreto aparente']},
+      {id:'cor',       label:'Cor / Tonalidade', type:'text', placeholder:'Ex: Natural, Branco, Cinza grafite'},
+      {id:'formato',   label:'Formato (se revestimento)', type:'text', placeholder:'Ex: 10×10, 30×60, Irregular'},
+      {id:'fixacao',   label:'Fixação', type:'select', options:['Argamassa colante','Rejunte epóxi','Parafuso / ancora mecânica','Cola específica','Peça autoportante','A definir']},
+      {id:'extras',    label:'Detalhes adicionais', type:'chips', options:['Moldura / sancas externas','Pingadeira embutida','Iluminação embutida','Jardineira integrada','Logotipo / Lettering','Rufos de alumínio','Com vedação de silicone']},
+      {id:'obs',       label:'Observações', type:'textarea', placeholder:'Estrutura de suporte? Impermeabilização prévia? Junta de dilatação?', span:3}
+    ]
+  },
+  { id:'loucas', label:'Louças', heading:'Louças sanitárias — por ambiente', isDynamic:true, dbKey:'loucas',
+    eyebrow:'Hidráulica', sub:'Especifique cada peça sanitária com localização, modelo, cor e pontos de instalação necessários.',
+    addLabel:'+ Nova louça', defaultTitle:(i)=>`Louça ${i+1}`,
+    fields:[
+      {id:'ambiente',  label:'Ambiente', type:'text', placeholder:'Ex: Banheiro suíte, Lavabo, WC empregada', span:2},
+      {id:'tipo',      label:'Tipo de louça', type:'select', options:['Vaso — caixa acoplada','Vaso — suspendo (wall-hung)','Vaso — inodoro americano','Vaso — smart / higienizador','Bidê suspenso','Bidê de piso','Cuba de embutir redonda','Cuba de embutir retangular','Cuba de apoio — cerâmica','Cuba de apoio — pedra/mármore','Cuba de coluna','Tanque de lavar — cerâmica','Tanque de lavar — granito','Banheira de alvenaria / Spa','Banheira acrílico freestanding','Banheira de hidromassagem']},
+      {id:'marca',     label:'Marca / Modelo', type:'text', placeholder:'Ex: Deca Quadra, Roca Gap, Incepa Link'},
+      {id:'cor',       label:'Cor', type:'select', options:['Branco','Off-white / Pergamon','Bege','Preto','Colorido (especificar)','A definir']},
+      {id:'qtd',       label:'Quantidade', type:'text', placeholder:'1', unit:'un'},
+      {id:'pt_af',     label:'Pontos água fria',   type:'text', placeholder:'1', unit:'pt'},
+      {id:'pt_aq',     label:'Pontos água quente', type:'text', placeholder:'0', unit:'pt'},
+      {id:'pt_es',     label:'Pontos de esgoto',   type:'text', placeholder:'1', unit:'pt'},
+      {id:'instalacao',label:'Tipo de instalação', type:'chips', options:['Novo ponto','Reaproveitamento existente','Reposicionamento','Embutir caixa sifonada','Caixa descarga embutida','Instalação suspensa (block frame)']},
+      {id:'obs',       label:'Observações', type:'textarea', placeholder:'Dimensões do vão (banheira), acabamento caixa embutida, posição do ralo?', span:3}
+    ]
+  },
+  { id:'metais', label:'Metais', heading:'Metais e torneiras — por ambiente', isDynamic:true, dbKey:'metais',
+    eyebrow:'Hidráulica', sub:'Cadastre cada metal sanitário com localização, modelo, acabamento e pontos de água necessários.',
+    addLabel:'+ Novo metal', defaultTitle:(i)=>`Metal ${i+1}`,
+    fields:[
+      {id:'ambiente',  label:'Ambiente', type:'text', placeholder:'Ex: Banheiro suíte, Cozinha, Área serviço', span:2},
+      {id:'tipo',      label:'Tipo de metal', type:'select', options:['Torneira de mesa — cozinha','Torneira de bancada — banheiro','Torneira de parede — lavatório','Torneira de coluna','Torneira de jardim / serviço','Torneira thermostatique','Chuveiro de teto (rain shower)','Chuveiro de parede (coluna)','Chuveiro elétrico','Ducha higiênica','Ducha de mão','Registro de pressão','Registro de gaveta','Válvula hidra — vaso convencional','Válvula hidra — vaso suspenso','Misturador monocomando — lavatório','Misturador monocomando — ducha','Misturador coluna de banho','Ralo linear','Ralo inteligente / click','Sifão de garrafa','Sifão de cozinha','Acabamento de registro embutido']},
+      {id:'marca',     label:'Marca / Modelo', type:'text', placeholder:'Ex: Deca Hydra, Lorenzetti Luxo, Roca'},
+      {id:'acabamento',label:'Acabamento', type:'select', options:['Cromado','Escovado / Inox','Preto matte','Dourado / Gold','Bronze','Branco','Cobre','A definir']},
+      {id:'qtd',       label:'Quantidade', type:'text', placeholder:'1', unit:'un'},
+      {id:'pt_af',     label:'Pontos água fria',   type:'text', placeholder:'1', unit:'pt'},
+      {id:'pt_aq',     label:'Pontos água quente', type:'text', placeholder:'1', unit:'pt'},
+      {id:'tecnologia',label:'Tecnologia', type:'chips', options:['Monocomando','Bica móvel','Sensor de presença','Temporizada','Termostática','Com filtro embutido','Economia de água','Compatível aquecedor a gás']},
+      {id:'obs',       label:'Observações', type:'textarea', placeholder:'Altura de instalação, distância entre pontos, bocal de saída?', span:3}
+    ]
+  },
+  { id:'pontos_hidra', label:'Pts. Hidráulicos', heading:'Pontos hidráulicos — mapeamento', isDynamic:true, dbKey:'pontos_hidra',
+    eyebrow:'Hidráulica', sub:'Mapeie cada ponto de água fria, quente, esgoto e gás com diâmetro e destinação.',
+    addLabel:'+ Novo ponto', defaultTitle:(i)=>`Ponto ${i+1}`,
+    fields:[
+      {id:'ambiente',    label:'Ambiente', type:'text', placeholder:'Ex: Cozinha, Banheiro 01, Área serviço', span:2},
+      {id:'tipo_ponto',  label:'Tipo de ponto', type:'select', options:['Água fria — parede','Água fria — piso','Água quente — parede','Água quente — piso','Esgoto — piso (ralo)','Esgoto — parede','Caixa sifonada','Gás — parede','Gás — piso','Ramal de esgoto','Coluna de esgoto']},
+      {id:'destinacao',  label:'Destinado a', type:'select', options:['Vaso sanitário','Cuba / Lavatório','Banheira / Spa','Chuveiro','Ducha higiênica','Torneira cozinha','Torneira área serviço','Máquina de lavar','Lava-louças','Geladeira (água)','Aquecedor / Boiler','Fogão a gás','Churrasqueira','Jardim / Torneira externa','Outro']},
+      {id:'situacao',    label:'Situação', type:'select', options:['Ponto novo — embutido','Ponto novo — sobrepor','Reposicionamento','Reaproveitamento (sem mexer)','Remoção / Entupimento']},
+      {id:'diametro',    label:'Diâmetro', type:'select', options:['1/2" (15mm)','3/4" (20mm)','1" (25mm)','1.1/2" (40mm)','2" (50mm)','3" (75mm)','4" (100mm)','A definir']},
+      {id:'material_tubo',label:'Material da tubulação', type:'select', options:['PVC soldável','PVC rosca','CPVC (água quente)','PPR (água quente)','Cobre','PEX','Ferro galvanizado','A definir / existente']},
+      {id:'qtd',         label:'Quantidade de pontos', type:'text', placeholder:'1', unit:'pt'},
+      {id:'pressao',     label:'Pressão necessária', type:'select', options:['Baixa pressão (gravidade)','Alta pressão (bomba/pressurizador)','Padrão / indiferente']},
+      {id:'extras',      label:'Complementos', type:'chips', options:['Registro de corte','Válvula de retenção','Filtro de linha','Conexão flexível','Isolamento térmico','Teste de estanqueidade']},
+      {id:'obs',         label:'Observações / croqui', type:'textarea', placeholder:'Distância do ramal, cotas de posicionamento, cota de piso acabado?', span:3}
+    ]
+  },
+  { id:'luminarias', label:'Luminárias', heading:'Luminárias — por ambiente', isDynamic:true, dbKey:'luminarias',
+    eyebrow:'Elétrica', sub:'Cadastre cada ambiente com tipos, modelos, potência e sistema de controle.',
+    addLabel:'+ Novo ambiente', defaultTitle:(i)=>`Ambiente ${i+1}`,
+    fields:[
+      {id:'ambiente',     label:'Ambiente', type:'text', placeholder:'Ex: Sala de estar, Cozinha, Corredor', span:2},
+      {id:'area',         label:'Área do ambiente', type:'text', placeholder:'20', unit:'m²'},
+      {id:'pe_direito',   label:'Pé-direito', type:'text', placeholder:'2,7', unit:'m'},
+      {id:'tipo_principal',label:'Luminária principal', type:'select', options:['Spot embutido downlight','Spot embutido dicroica GU10','Plafon de sobrepor LED','Painel LED embutido','Pendente único','Pendente múltiplo / lustre','Trilho de spots','Luminária de teto decorativa','Arandela de parede','Fita LED em sanca','Sem luminária fixa (abajures)']},
+      {id:'qtd_principal',label:'Qtd. luminária principal', type:'text', placeholder:'6', unit:'un'},
+      {id:'watts',        label:'Potência por peça', type:'select', options:['3W','5W','7W','9W','12W','15W','18W','24W','36W','50W+','A definir']},
+      {id:'temperatura',  label:'Temperatura de cor', type:'select', options:['2700K — Quente âmbar','3000K — Quente branco','4000K — Neutro','5000K — Dia','6500K — Frio','Misto']},
+      {id:'secundarias',  label:'Iluminação complementar', type:'chips', options:['Fita LED sanca','Fita LED nicho','Fita LED rodapé','Fita LED RGBW','Spot jardim/externo','Arandela parede','Balizador piso','Luz de emergência','Projetor fachada','Underwater piscina']},
+      {id:'qtd_sec',      label:'Qtd. complementar', type:'text', placeholder:'0', unit:'un'},
+      {id:'circuito',     label:'Controle', type:'chips', options:['Dimmer analógico','Dimmer digital','Interruptor inteligente Wi-Fi','Sensor de presença','Sensor crepuscular','Timer','Dois circuitos independentes','Três circuitos+','Controle por app']},
+      {id:'modelo',       label:'Modelo / Referência', type:'text', placeholder:'Ex: Opus, Bella Iluminação, Elgin, Nordecor', span:2},
+      {id:'obs',          label:'Observações', type:'textarea', placeholder:'Altura de instalação, recorte no gesso, ponto elétrico existente?', span:3}
+    ]
+  },
+  { id:'drywall', label:'Drywall / Gesso', heading:'Drywall e Gesso — por ambiente/sistema', isDynamic:true, dbKey:'drywall',
+    eyebrow:'Acabamento', sub:'Cadastre cada sistema de drywall, forro de gesso ou divisória por ambiente com dimensões e especificações.',
+    addLabel:'+ Novo sistema', defaultTitle:(i)=>`Sistema ${i+1}`,
+    fields:[
+      {id:'ambiente',       label:'Ambiente / Localização', type:'text', placeholder:'Ex: Sala de estar, Corredor, Banheiro suíte', span:2},
+      {id:'tipo_sistema',   label:'Tipo de sistema', type:'select', options:['Forro de gesso liso','Forro de gesso com sanca aberta','Forro de gesso com sanca fechada','Forro drywall (steel frame)','Forro de gesso acartonado (placa)','Parede divisória drywall simples','Parede divisória drywall dupla (acústica)','Parede divisória drywall com lã de vidro','Parede de gesso acartonado curvo','Painel / bancada de drywall','Nicho embutido em drywall','Revestimento de parede em gesso liso','Reboco + massa corrida','Box acústico drywall','Shaft técnico (duto de passagem)','Contra-forro (teto rebaixado sobre laje)']},
+      {id:'area',           label:'Área', type:'text', placeholder:'24', unit:'m²'},
+      {id:'comprimento',    label:'Comprimento linear', type:'text', placeholder:'6', unit:'m'},
+      {id:'altura',         label:'Altura / Espessura', type:'text', placeholder:'2,7 (forro) ou 0,10 (parede)', unit:'m'},
+      {id:'pe_acabado',     label:'Pé-direito acabado', type:'text', placeholder:'2,60', unit:'m'},
+      {id:'placa',          label:'Tipo de placa', type:'select', options:['Standard (ST) — ambientes secos','RU — resistente à umidade (banheiros/cozinhas)','RF — resistente ao fogo','AR — alta resistência / impacto','Cimentícia (fachada/externa)','Placa de gesso comum','Não se aplica']},
+      {id:'espessura_placa',label:'Espessura da placa', type:'select', options:['9,5 mm','12,5 mm','15 mm','18 mm','A definir']},
+      {id:'estrutura',      label:'Estrutura de suporte', type:'select', options:['Perfil metálico galvanizado (montante + guia)','Perfil de alumínio','Estrutura de madeira','Pendural metálico (forro)','Fixação direta na laje','Mista — metal + madeira','Não se aplica / apenas reboco']},
+      {id:'isolamento',     label:'Isolamento / enchimento', type:'select', options:['Sem isolamento','Lã de vidro 25mm','Lã de vidro 50mm','Lã de rocha 25mm','Lã de rocha 50mm','Poliestireno (isopor)','Manta acústica','A definir']},
+      {id:'acabamento_sup', label:'Acabamento superficial', type:'select', options:['Massa corrida PVA + pintura','Massa acrílica + pintura','Gesso liso desempenado','Textura projetada','Papel de parede','Revestimento cerâmico','Porcelanato','Sem acabamento (base)','A definir']},
+      {id:'sanca_tipo',     label:'Tipo de sanca / detalhe', type:'select', options:['Sem sanca','Sanca simples (caixa de luz)','Sanca com fita LED embutida','Sanca com luminária embutida','Sanca curva','Moldura de gesso decorativa','Bandeja invertida','Nicho iluminado']},
+      {id:'passagens',      label:'Passagens e embutidos', type:'chips', options:['Ponto de luz embutido','Tomada embutida','Caixa de som embutida','Ar-condicionado embutido (fancoil)','Duto de ar (climatização)','Passagem hidráulica','Acesso técnico (alçapão)','Sprinkler embutido','Detector de fumaça embutido']},
+      {id:'qtd_placas',     label:'Qtd estimada de placas', type:'text', placeholder:'40', unit:'un'},
+      {id:'obs',            label:'Observações', type:'textarea', placeholder:'Curvas, recortes especiais, integração com marcenaria, junção com parede existente?', span:3}
+    ]
+  },
+  // ─── 15: Observações ───
+  {
+    id: 'obs',
+    label: 'Observações',
+    heading: 'Alguma observação final?',
+    sub: 'Informações adicionais que ajudam a montar um briefing mais preciso.',
+    multi: false,
+    isTextOnly: true,
+    textInputs: [
+      { id: 'contato_nome', label: 'Nome do cliente / responsável', placeholder: 'Ex: João Silva', type: 'text' },
+      { id: 'contato_tel', label: 'Telefone / WhatsApp', placeholder: '(45) 9 9999-0000', type: 'text' },
+      { id: 'endereco', label: 'Endereço do imóvel', placeholder: 'Rua, número, bairro, cidade', type: 'text' },
+      { id: 'area_m2', label: 'Área aproximada (m²)', placeholder: 'Ex: 120', type: 'text' },
+      { id: 'referencias', label: 'Referências visuais ou links de inspiração', placeholder: 'Cole links ou descreva o estilo desejado...', type: 'textarea' },
+      { id: 'notas', label: 'Observações livres', placeholder: 'Restrições de horário, condições especiais, detalhes importantes...', type: 'textarea' }
+    ]
+  }
+];
+
+
+// ══════════════════════════════════════════════════════
+// DYNAMIC ITEM DATABASE
+// ══════════════════════════════════════════════════════
+const DYN = {};
+// Initialised lazily per dbKey
+
+function dynGet(dbKey) {
+  if (!DYN[dbKey]) DYN[dbKey] = [];
+  return DYN[dbKey];
+}
+
+function dynAdd(dbKey) {
+  dynGet(dbKey).push({ _collapsed: false });
+  render(); // re-render current step
+  setTimeout(() => {
+    const items = document.querySelectorAll('.dyn-item');
+    items[items.length - 1]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 50);
+}
+
+function dynDel(dbKey, i) {
+  dynGet(dbKey).splice(i, 1);
+  render();
+}
+
+function dynDup(dbKey, i) {
+  const src = dynGet(dbKey)[i];
+  const clone = JSON.parse(JSON.stringify(src));
+  clone._collapsed = false;
+  dynGet(dbKey).splice(i + 1, 0, clone);
+  render();
+}
+
+function dynToggleCollapse(dbKey, i) {
+  dynGet(dbKey)[i]._collapsed = !dynGet(dbKey)[i]._collapsed;
+  const el = document.getElementById(`dyn-${dbKey}-${i}`);
+  if (el) el.classList.toggle('collapsed', dynGet(dbKey)[i]._collapsed);
+}
+
+function dynSet(dbKey, i, field, val) {
+  dynGet(dbKey)[i][field] = val;
+  // Update header live
+  const cfg = TREE.find(q => q.dbKey === dbKey);
+  if (!cfg) return;
+  const item = dynGet(dbKey)[i];
+  const card = document.getElementById(`dyn-${dbKey}-${i}`);
+  if (card) {
+    const te = card.querySelector('.dyn-title');
+    const se = card.querySelector('.dyn-summary');
+    const title = item.ambiente || item.local || item.tipo || item.tipo_ponto || cfg.defaultTitle(i);
+    if (te) te.textContent = title;
+    if (se) se.textContent = dynSummary(item);
+  }
+}
+
+function dynChip(dbKey, i, field, val) {
+  const item = dynGet(dbKey)[i];
+  if (!item[field]) item[field] = [];
+  const arr = item[field];
+  const idx = arr.indexOf(val);
+  if (idx === -1) arr.push(val); else arr.splice(idx, 1);
+  const card = document.getElementById(`dyn-${dbKey}-${i}`);
+  if (!card) return;
+  card.querySelectorAll('.dyn-chip').forEach(c => {
+    if (c.dataset.val === val && c.dataset.field === field) c.classList.toggle('on', arr.includes(val));
+  });
+}
+
+function dynSummary(item) {
+  const parts = [];
+  if (item.tipo)     parts.push(item.tipo.split(' — ')[0].split(' (')[0]);
+  if (item.sistema)  parts.push(item.sistema.split(' ')[0]);
+  if (item.material) parts.push(item.material.split(' ')[0]);
+  if (item.largura && item.altura) parts.push(item.largura + '×' + item.altura + 'cm');
+  if (item.area)     parts.push(item.area + 'm²');
+  if (item.area_parede) parts.push('P:' + item.area_parede + 'm²');
+  if (item.qtd && +item.qtd > 1) parts.push('×' + item.qtd);
+  if (item.tipo_ponto)  parts.push(item.tipo_ponto);
+  if (item.destinacao)  parts.push(item.destinacao);
+  if (item.tipo_principal) parts.push(item.tipo_principal.split(' ')[0]);
+  return parts.slice(0, 4).join(' · ');
+}
+
+// ── Render a dynamic step (replaces isMaterial rendering) ────────────────────
+function renderDynamicStep(q, wrap) {
+  const items = dynGet(q.dbKey);
+
+  // Totals bar
+  const totDiv = document.createElement('div');
+  totDiv.className = 'dyn-totals';
+  totDiv.innerHTML = dynTotalsHtml(q, items);
+  wrap.appendChild(totDiv);
+
+  // Items
+  items.forEach((item, i) => {
+    wrap.appendChild(renderDynItem(q, item, i));
+  });
+
+  // Add button
+  const addBtn = document.createElement('button');
+  addBtn.className = 'dyn-add-btn';
+  addBtn.innerHTML = '<span style="font-size:1.1em">+</span> ' + q.addLabel;
+  addBtn.onclick = () => dynAdd(q.dbKey);
+  wrap.appendChild(addBtn);
+}
+
+function dynTotalsHtml(q, items) {
+  if (!items.length) return `<span>Nenhum item adicionado ainda — clique em "<strong>${q.addLabel}</strong>"</span>`;
+  const totQtd = items.reduce((s, it) => s + (+(it.qtd||it.qtd_principal)||1), 0);
+  const totArea = items.reduce((s, it) => s + (+(it.area||it.area_parede||0)), 0);
+  const totPts  = items.reduce((s, it) => s + (+(it.pt_af||0)) + (+(it.pt_aq||0)) + (+(it.pt_es||0)), 0);
+  let html = `<strong>${items.length}</strong> itens cadastrados`;
+  if (totArea > 0)   html += ` &nbsp;·&nbsp; <strong>${totArea.toFixed(1)}</strong> m² total`;
+  if (totQtd > items.length) html += ` &nbsp;·&nbsp; <strong>${totQtd}</strong> unidades`;
+  if (totPts > 0)    html += ` &nbsp;·&nbsp; <strong>${totPts}</strong> pontos hidráulicos`;
+  return html;
+}
+
+function renderDynItem(q, item, i) {
+  const el = document.createElement('div');
+  el.className = 'dyn-item' + (item._collapsed ? ' collapsed' : '');
+  el.id = `dyn-${q.dbKey}-${i}`;
+
+  const title = item.ambiente || item.local || item.tipo || item.tipo_ponto || q.defaultTitle(i);
+  const summary = dynSummary(item);
+
+  // Head
+  const head = document.createElement('div');
+  head.className = 'dyn-head';
+  head.onclick = () => dynToggleCollapse(q.dbKey, i);
+  head.innerHTML = `
+    <div class="dyn-num">${i+1}</div>
+    <div class="dyn-title-wrap">
+      <div class="dyn-title">${escHtmlDyn(title)}</div>
+      ${summary ? `<div class="dyn-summary">${escHtmlDyn(summary)}</div>` : ''}
+    </div>
+    <div class="dyn-btns" onclick="event.stopPropagation()">
+      <button class="dyn-btn dup" title="Duplicar" onclick="dynDup('${q.dbKey}',${i})">⎘</button>
+      <button class="dyn-btn del" title="Remover"  onclick="dynDel('${q.dbKey}',${i})">✕</button>
+    </div>
+    <div class="dyn-chevron">▼</div>`;
+  el.appendChild(head);
+
+  // Body
+  const body = document.createElement('div');
+  body.className = 'dyn-body';
+  if (item._collapsed) body.style.display = 'none';
+
+  q.fields.forEach(f => {
+    const val = item[f.id] || '';
+    const spanCls = f.span === 3 ? 's3' : f.span === 2 ? 's2' : '';
+
+    if (f.type === 'chips') {
+      const fd = document.createElement('div');
+      fd.className = 'dyn-field dyn-chips';
+      fd.innerHTML = `<div class="dyn-label">${f.label}</div>`;
+      const row = document.createElement('div');
+      row.className = 'dyn-chip-row';
+      const sel = Array.isArray(val) ? val : [];
+      f.options.forEach(o => {
+        const c = document.createElement('div');
+        c.className = 'dyn-chip' + (sel.includes(o) ? ' on' : '');
+        c.dataset.field = f.id;
+        c.dataset.val   = o;
+        c.textContent   = o;
+        c.onclick = () => dynChip(q.dbKey, i, f.id, o);
+        row.appendChild(c);
+      });
+      fd.appendChild(row);
+      body.appendChild(fd);
+    } else if (f.type === 'textarea') {
+      const fd = document.createElement('div');
+      fd.className = `dyn-field ${spanCls || 's3'}`;
+      fd.innerHTML = `<div class="dyn-label">${f.label}</div>`;
+      const ta = document.createElement('textarea');
+      ta.className = 'dyn-textarea';
+      ta.placeholder = f.placeholder || '';
+      ta.value = val;
+      ta.addEventListener('change', () => dynSet(q.dbKey, i, f.id, ta.value));
+      fd.appendChild(ta);
+      body.appendChild(fd);
+    } else if (f.type === 'select') {
+      const fd = document.createElement('div');
+      fd.className = `dyn-field ${spanCls}`;
+      const unitHtml = f.unit ? `<span class="dyn-unit">${f.unit}</span>` : '';
+      fd.innerHTML = `<div class="dyn-label">${f.label}${unitHtml}</div>`;
+      const sel = document.createElement('select');
+      sel.className = 'dyn-select';
+      sel.innerHTML = `<option value="">— selecione —</option>` +
+        f.options.map(o => `<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('');
+      sel.addEventListener('change', () => dynSet(q.dbKey, i, f.id, sel.value));
+      fd.appendChild(sel);
+      body.appendChild(fd);
+    } else {
+      const fd = document.createElement('div');
+      fd.className = `dyn-field ${spanCls}`;
+      const unitHtml = f.unit ? `<span class="dyn-unit">${f.unit}</span>` : '';
+      fd.innerHTML = `<div class="dyn-label">${f.label}${unitHtml}</div>`;
+      const inp = document.createElement('input');
+      inp.className = 'dyn-input';
+      inp.type = 'text';
+      inp.placeholder = f.placeholder || '';
+      inp.value = val;
+      inp.addEventListener('change', () => dynSet(q.dbKey, i, f.id, inp.value));
+      fd.appendChild(inp);
+      body.appendChild(fd);
+    }
+  });
+
+  el.appendChild(body);
+  return el;
+}
+
+function escHtmlDyn(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Build result table for a dynamic step ────────────────────────────────────
+function buildDynResultBlock(q) {
+  const items = dynGet(q.dbKey);
+  if (!items.length) return '';
+
+  // pick first 5 non-chip, non-textarea fields as columns
+  const cols = q.fields.filter(f => f.type !== 'chips' && f.type !== 'textarea').slice(0, 6);
+
+  const thead = cols.map(c => `<th>${c.label}${c.unit?' ('+c.unit+')':''}</th>`).join('');
+  const tbody = items.map((item, idx) => {
+    const cells = cols.map(c => {
+      const v = item[c.id] || '—';
+      const isDim = c.unit && c.unit !== '';
+      return `<td class="${isDim?'td-dim':''}">${escHtmlDyn(v)}</td>`;
+    }).join('');
+
+    const chipFields = q.fields.filter(f => f.type === 'chips' && (item[f.id]||[]).length);
+    const chipHtml = chipFields.map(f => (item[f.id]||[]).map(v => `<span class="chip-tag">${escHtmlDyn(v)}</span>`).join('')).join('');
+    const obsHtml = item.obs ? `<br><small style="color:var(--text3);font-size:0.68rem">📝 ${escHtmlDyn(item.obs)}</small>` : '';
+
+    return `<tr>
+      <td class="td-n">${idx+1}</td>
+      ${cells}
+      <td>${chipHtml}${obsHtml}</td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="section-card" style="margin-bottom:1rem">
+    <div class="section-head"><span>${q.eyebrow||'📋'}</span><h3>${q.heading}</h3></div>
+    <div class="section-body" style="padding:0;overflow-x:auto">
+      <table class="result-table">
+        <thead><tr><th>#</th>${thead}<th>Detalhes / Obs.</th></tr></thead>
+        <tbody>${tbody}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+const A = {}; // answers
+let stepSeq = []; // computed sequence of step indices
+let cursor = 0; // index in stepSeq
+
+function computeSeq() {
+  stepSeq = TREE.reduce((acc, q, i) => {
+    if (!q.unlocksIf || q.unlocksIf(A)) acc.push(i);
+    return acc;
+  }, []);
+  // Always end with result
+  if (!stepSeq.includes('result')) stepSeq.push('result');
+}
+
+function curQ() { return stepSeq[cursor] === 'result' ? null : TREE[stepSeq[cursor]]; }
+function totalSteps() { return stepSeq.length; }
+function pct() { return Math.round((cursor / (totalSteps() - 1)) * 100); }
+
+// ══════════════════════════════════════════════════════
+// RENDER STEPPER
+// ══════════════════════════════════════════════════════
+function renderStepper() {
+  const s = document.getElementById('stepper');
+  const visSteps = stepSeq.filter(i => i !== 'result');
+  s.innerHTML = visSteps.map((qi, si) => {
+    const q = TREE[qi];
+    const done = si < cursor;
+    const active = si === cursor;
+    const unlocked = si <= cursor;
+    const cls = active ? 'active' : done ? 'done' : unlocked ? 'unlocked' : 'locked';
+    const line = si < visSteps.length - 1
+      ? `<div class="st-line ${done ? 'done' : ''}"></div>` : '';
+    return `<div class="st-node">
+      <div class="st-dot ${cls}" title="${q.label}" onclick="jumpTo(${si})">${done ? '✓' : si + 1}</div>
+      ${line}
+    </div>`;
+  }).join('');
+}
+
+function updateTopBar() {
+  document.getElementById('fillBar').style.width = pct() + '%';
+  document.getElementById('pctLabel').textContent = pct() + '%';
+  const q = curQ();
+  document.getElementById('stepLabel').textContent = q
+    ? `${cursor + 1} / ${totalSteps() - 1} — ${q.label}`
+    : 'Resultado';
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER QUESTION
+// ══════════════════════════════════════════════════════
+function render() {
+  computeSeq();
+  renderStepper();
+  updateTopBar();
+
+  if (stepSeq[cursor] === 'result') { renderResult(); return; }
+
+  const q = curQ();
+  if (!q) return;
+
+  const sh = document.getElementById('shell');
+  sh.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'q-wrap';
+
+  // Unlock badge
+  if (q.unlocksIf) {
+    const b = document.createElement('div');
+    b.className = 'unlock-badge';
+    b.innerHTML = '⚡ Pergunta desbloqueada pelas suas respostas';
+    wrap.appendChild(b);
+  }
+
+  // Eyebrow
+  const ey = document.createElement('div');
+  ey.className = 'q-eyebrow';
+  ey.textContent = `Pergunta ${cursor + 1} de ${totalSteps() - 1}`;
+  wrap.appendChild(ey);
+
+  // Heading
+  const hd = document.createElement('h2');
+  hd.className = 'q-heading';
+  hd.textContent = q.heading;
+  wrap.appendChild(hd);
+
+  // Sub
+  if (q.sub) {
+    const sb = document.createElement('p');
+    sb.className = 'q-sub';
+    sb.textContent = q.sub;
+    wrap.appendChild(sb);
+  }
+
+  // Alert banner (reactive)
+  const alertEl = document.createElement('div');
+  alertEl.id = 'alertBanner';
+  alertEl.className = 'alert-banner';
+  wrap.appendChild(alertEl);
+
+  // Dynamic multi-item step
+  if (q.isDynamic) {
+    renderDynamicStep(q, wrap);
+  } else if (q.isTextOnly) {
+    q.textInputs.forEach(fi => {
+      const fg = document.createElement('div');
+      fg.style.marginBottom = '1rem';
+      const lbl = document.createElement('label');
+      lbl.style.cssText = 'display:block;font-size:0.8rem;color:var(--text2);margin-bottom:0.4rem;font-weight:600;letter-spacing:0.02em';
+      lbl.textContent = fi.label;
+      fg.appendChild(lbl);
+      const el = fi.type === 'textarea'
+        ? document.createElement('textarea')
+        : document.createElement('input');
+      el.className = 'text-field';
+      if (fi.type !== 'textarea') el.type = fi.type;
+      el.placeholder = fi.placeholder;
+      el.value = A[fi.id] || '';
+      el.style.minHeight = fi.type === 'textarea' ? '80px' : '';
+      el.addEventListener('input', () => { A[fi.id] = el.value; });
+      fg.appendChild(el);
+      wrap.appendChild(fg);
+    });
+  } else if (!q.isDynamic) {
+    // Cards grid
+    const grid = document.createElement('div');
+    grid.className = 'cat-grid';
+
+    q.cards.forEach(card => {
+      const sel = isCardSel(q, card.id);
+      const cc = document.createElement('div');
+      cc.className = 'cat-card' + (sel ? ' selected' : '');
+      cc.dataset.cardId = card.id;
+      cc.innerHTML = `
+        <div class="cat-sel-mark">✓</div>
+        <div class="cat-card-inner">
+          <div class="cat-icon">${card.icon}</div>
+          <div class="cat-body">
+            <div class="cat-label">${card.label}</div>
+            ${card.desc ? `<div class="cat-desc">${card.desc}</div>` : ''}
+          </div>
+        </div>`;
+      cc.addEventListener('click', () => toggleCard(q, card, cc, wrap));
+      grid.appendChild(cc);
+    });
+
+    wrap.appendChild(grid);
+
+    // Render open detail panels
+    q.cards.forEach(card => {
+      if (isCardSel(q, card.id) && card.details?.length) {
+        wrap.appendChild(makeDetailPanel(q, card));
+      }
+    });
+  }
+
+  // Spec fields for material questions
+  if (q.isMaterial && q.specFields) {
+    const sp = document.createElement('div');
+    sp.className = 'spec-panel';
+    sp.id = 'specPanel';
+    const st = document.createElement('div');
+    st.className = 'spec-panel-title';
+    st.innerHTML = '📐 Medidas, Quantidades e Especificações';
+    sp.appendChild(st);
+    const sg = document.createElement('div');
+    sg.className = 'spec-grid';
+    q.specFields.forEach(sf => {
+      const fd = document.createElement('div');
+      fd.className = 'spec-field' + (sf.type === 'textarea' ? ' full' : '');
+      const lb = document.createElement('div');
+      lb.className = 'spec-label';
+      lb.innerHTML = `<span>${sf.label}</span>${sf.unit ? `<span class="spec-unit">${sf.unit}</span>` : ''}`;
+      fd.appendChild(lb);
+      const el = sf.type === 'textarea'
+        ? document.createElement('textarea')
+        : document.createElement('input');
+      el.className = 'spec-input';
+      if (sf.type !== 'textarea') el.type = 'text';
+      el.placeholder = sf.placeholder || '';
+      el.value = A[sf.id] || '';
+      if (sf.type === 'textarea') el.style.minHeight = '70px';
+      el.addEventListener('input', () => { A[sf.id] = el.value; });
+      fd.appendChild(el);
+      sg.appendChild(fd);
+    });
+    sp.appendChild(sg);
+    wrap.appendChild(sp);
+  }
+
+  // Nav
+  const nav = document.createElement('div');
+  nav.className = 'q-nav';
+
+  const left = document.createElement('div');
+  if (cursor > 0) {
+    const back = document.createElement('button');
+    back.className = 'btn btn-ghost';
+    back.textContent = '← Voltar';
+    back.onclick = () => { cursor--; render(); window.scrollTo(0,0); };
+    left.appendChild(back);
+  }
+
+  const right = document.createElement('div');
+  right.style.display = 'flex';
+  right.style.alignItems = 'center';
+  right.style.gap = '1rem';
+
+  if (q.multi || q.isTextOnly || q.isDynamic) {
+    const skip = document.createElement('button');
+    skip.className = 'skip-btn';
+    skip.textContent = 'Pular esta etapa';
+    skip.onclick = () => { advance(); };
+    right.appendChild(skip);
+  }
+
+  const next = document.createElement('button');
+  next.className = 'btn btn-primary';
+  next.id = 'btnNext';
+  const isLast = cursor === totalSteps() - 2;
+  next.innerHTML = isLast
+    ? 'Gerar Briefing <span style="font-size:1.1em">→</span>'
+    : 'Continuar <span style="font-size:1.1em">→</span>';
+  next.disabled = !hasAnswer(q);
+  next.onclick = () => advance();
+  right.appendChild(next);
+
+  nav.appendChild(left);
+  nav.appendChild(right);
+  wrap.appendChild(nav);
+
+  sh.appendChild(wrap);
+  refreshAlert(q);
+}
+
+function isCardSel(q, cardId) {
+  const key = q.id + (q.multi ? '_sel' : '');
+  if (q.multi) return (A[key] || []).includes(cardId);
+  return A[q.id] === cardId;
+}
+
+function toggleCard(q, card, el, wrap) {
+  const key = q.id + (q.multi ? '_sel' : '');
+
+  if (q.multi) {
+    if (!A[key]) A[key] = [];
+    const idx = A[key].indexOf(card.id);
+    if (idx === -1) {
+      A[key].push(card.id);
+      el.classList.add('selected');
+      if (card.details?.length) {
+        const dp = makeDetailPanel(q, card);
+        // Insert after grid
+        const grid = wrap.querySelector('.cat-grid');
+        let after = grid.nextSibling;
+        // Insert before existing panels or at end before nav
+        wrap.insertBefore(dp, wrap.querySelector('.q-nav'));
+      }
+    } else {
+      A[key].splice(idx, 1);
+      el.classList.remove('selected');
+      // Remove detail panel
+      const existing = wrap.querySelector(`[data-detail="${q.id}_${card.id}"]`);
+      if (existing) existing.remove();
+    }
+  } else {
+    // Deselect previous
+    const prev = A[q.id];
+    if (prev) {
+      const prevEl = wrap.querySelector(`[data-card-id="${prev}"]`);
+      if (prevEl) prevEl.classList.remove('selected');
+      const prevPanel = wrap.querySelector(`[data-detail="${q.id}_${prev}"]`);
+      if (prevPanel) prevPanel.remove();
+    }
+    A[q.id] = card.id;
+    el.classList.add('selected');
+    if (card.details?.length) {
+      const dp = makeDetailPanel(q, card);
+      wrap.insertBefore(dp, wrap.querySelector('.q-nav'));
+    }
+  }
+
+  // Refresh next button
+  const btn = document.getElementById('btnNext');
+  if (btn) btn.disabled = !hasAnswer(q);
+  refreshAlert(q);
+}
+
+function makeDetailPanel(q, card) {
+  if (!card.details?.length) return document.createElement('div');
+  const dp = document.createElement('div');
+  dp.className = 'details-panel open';
+  dp.dataset.detail = `${q.id}_${card.id}`;
+
+  const lbl = document.createElement('div');
+  lbl.className = 'details-label';
+  lbl.innerHTML = `Detalhes — <strong style="color:var(--text2)">${card.label}</strong>`;
+  dp.appendChild(lbl);
+
+  const row = document.createElement('div');
+  row.className = 'chip-row';
+
+  const detailKey = `${q.id}_${card.id}_details`;
+  if (!A[detailKey]) A[detailKey] = [];
+
+  card.details.forEach(d => {
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (A[detailKey].includes(d) ? ' on' : '');
+    chip.innerHTML = `<span>${d}</span><span class="chip-x">✕</span>`;
+    chip.onclick = () => {
+      const idx = A[detailKey].indexOf(d);
+      if (idx === -1) { A[detailKey].push(d); chip.classList.add('on'); }
+      else { A[detailKey].splice(idx, 1); chip.classList.remove('on'); }
+    };
+    row.appendChild(chip);
+  });
+
+  dp.appendChild(row);
+  return dp;
+}
+
+function hasAnswer(q) {
+  if (q.isDynamic) return true;
+  if (q.isTextOnly) return true;
+  if (q.multi) return (A[q.id + '_sel'] || []).length > 0;
+  return !!A[q.id];
+}
+
+function refreshAlert(q) {
+  if (!q.alert) return;
+  const el = document.getElementById('alertBanner');
+  if (!el) return;
+  const alert = q.alert(A);
+  if (alert) {
+    el.className = `alert-banner show ${alert.type}`;
+    el.innerHTML = alert.msg;
+  } else {
+    el.className = 'alert-banner';
+    el.textContent = '';
+  }
+}
+
+function advance() {
+  const oldSeq = [...stepSeq];
+  cursor++;
+  computeSeq();
+  // Check if new steps were unlocked
+  if (stepSeq.length > oldSeq.length) {
+    // Notify with badge on next render (handled by unlocksIf)
+  }
+  render();
+  window.scrollTo(0, 0);
+}
+
+function jumpTo(si) {
+  if (si <= cursor) { cursor = si; render(); window.scrollTo(0,0); }
+}
+
+// ══════════════════════════════════════════════════════
+// RESULT
+// ══════════════════════════════════════════════════════
+function renderResult() {
+  const sh = document.getElementById('shell');
+  sh.innerHTML = '';
+  const w = document.createElement('div');
+  w.className = 'result-wrap';
+  w.innerHTML = buildResultHTML();
+  sh.appendChild(w);
+  runAI();
+}
+
+function getDetails(qId, cardId) {
+  return (A[`${qId}_${cardId}_details`] || []);
+}
+
+function getCardLabels(qId) {
+  const sel = A[qId + '_sel'] || (A[qId] ? [A[qId]] : []);
+  return sel.map(id => {
+    const q = TREE.find(q => q.id === qId);
+    const card = q?.cards.find(c => c.id === id);
+    return card?.label || id;
+  });
+}
+
+function buildAlerts() {
+  const items = [];
+
+  if (A.tipo === 'estrutural')
+    items.push({ level: 'high', text: 'Serviços estruturais exigem ART/RRT de responsável técnico. Providencie antes de iniciar.' });
+  if (A.tipo === 'comercial')
+    items.push({ level: 'high', text: 'Imóvel comercial: verifique AVCB, Habite-se e alvarás municipais necessários para a atividade.' });
+  if (A.restricoes_sel?.includes('tombado'))
+    items.push({ level: 'high', text: 'Imóvel tombado — obtenha aprovação do IPHAN ou órgão de patrimônio ANTES de qualquer intervenção.' });
+  if (A.situacao === 'degradado')
+    items.push({ level: 'high', text: 'Imóvel degradado: realize vistoria técnica completa antes de fechar o orçamento. Reserve 20% para imprevistos.' });
+  if (A.situacao === 'inacabado')
+    items.push({ level: 'high', text: 'Obra inacabada: contrate laudo técnico da situação atual antes de retomar os serviços.' });
+  if (A.restricoes_sel?.includes('condominio'))
+    items.push({ level: 'med', text: 'Condomínio: obtenha aprovação por escrito da administração antes de iniciar qualquer serviço.' });
+  if (A.projeto === 'execucao_direta')
+    items.push({ level: 'med', text: 'Sem projeto formal: o risco de retrabalho e estouro de orçamento é significativamente maior.' });
+  if (A.prazo === 'urgente')
+    items.push({ level: 'med', text: 'Início urgente pode encarecer a obra em 10–30% pela mobilização acelerada sem cotações comparativas.' });
+  if (A.instalacoes_sel?.includes('eletrica'))
+    items.push({ level: 'med', text: 'Instalação elétrica: exija ART/laudo de conformidade (NBR 5410) ao final da obra.' });
+  if (A.especiais_sel?.includes('pcd'))
+    items.push({ level: 'med', text: 'Acessibilidade PcD: projeto deve seguir NBR 9050. Verifique se é obrigação legal para uso comercial.' });
+  if (A.situacao === 'habitado')
+    items.push({ level: 'low', text: 'Imóvel habitado: planeje a obra em fases e estabeleça áreas de isolamento para proteção dos moradores.' });
+  if (!items.length)
+    items.push({ level: 'low', text: 'Projeto sem alertas críticos identificados. Siga com planejamento detalhado e múltiplos orçamentos.' });
+
+  return items.map(i => `
+    <div class="alert-item ${i.level}">
+      <span>${i.level === 'high' ? '🔴' : i.level === 'med' ? '🟡' : '🟢'}</span>
+      <span>${i.text}</span>
+    </div>`).join('');
+}
+
+function buildMaterialSection(qId, label, specFieldIds) {
+  const q = TREE.find(q => q.id === qId);
+  if (!q) return '';
+  const selCards = (A[qId + '_sel'] || (A[qId] ? [A[qId]] : []));
+  if (!selCards.length) return '';
+
+  const cardRows = selCards.map(cid => {
+    const card = q.cards.find(c => c.id === cid);
+    if (!card) return '';
+    const details = A[`${qId}_${cid}_details`] || [];
+    return `
+      <div class="brief-row">
+        <div class="brief-key">${card.label}</div>
+        <div class="brief-val">${details.length ? details.join(', ') : '—'}</div>
+      </div>`;
+  }).join('');
+
+  const specRows = (specFieldIds || []).map(sf => {
+    const val = A[sf.id];
+    if (!val) return '';
+    return `
+      <div class="brief-row">
+        <div class="brief-key">${sf.label}</div>
+        <div class="brief-val">${val}${sf.unit ? ' ' + sf.unit : ''}</div>
+      </div>`;
+  }).filter(Boolean).join('');
+
+  if (!cardRows && !specRows) return '';
+
+  return `
+    <div class="section-card">
+      <div class="section-head"><span>${label.icon}</span><h3>${label.title}</h3></div>
+      <div class="section-body">${cardRows}${specRows}</div>
+    </div>`;
+}
+
+function buildResultHTML() {
+  // Gather all detail chips selected
+  const allDetails = {};
+  TREE.forEach(q => {
+    (q.cards || []).forEach(card => {
+      const d = getDetails(q.id, card.id);
+      if (d.length) allDetails[`${card.label}`] = d;
+    });
+  });
+
+  const briefRows = [
+    ['Tipo de reforma', getCardLabels('tipo').join(', ')],
+    ['Método construtivo', getCardLabels('metodo').join(', ')],
+    ['Situação do imóvel', getCardLabels('situacao').join(', ')],
+    ['Ambientes', getCardLabels('ambientes').join(', ')],
+    ['Instalações', getCardLabels('instalacoes').join(', ')],
+    ['Restrições legais', getCardLabels('restricoes').join(', ')],
+    ['Projeto existente', getCardLabels('projeto').join(', ')],
+    ['Orçamento previsto', getCardLabels('orcamento').join(', ')],
+    ['Urgência / Prazo', getCardLabels('prazo').join(', ')],
+    ['Necessidades especiais', getCardLabels('especiais').join(', ')],
+    ['Responsável', A.contato_nome],
+    ['Contato', A.contato_tel],
+    ['Endereço', A.endereco],
+    ['Área', A.area_m2 ? A.area_m2 + ' m²' : ''],
+    ['Referências', A.referencias],
+    ['Observações', A.notas],
+  ].filter(r => r[1]);
+
+  const detailItems = Object.entries(allDetails).map(([k, v]) =>
+    `<div class="brief-row"><div class="brief-key">↳ ${k}</div><div class="brief-val">${v.join(', ')}</div></div>`
+  ).join('');
+
+  return `
+    <div class="result-hero">
+      <div class="result-eyebrow">✦ Diagnóstico Completo</div>
+      <h2 class="result-title">Briefing do<br><em>Projeto</em></h2>
+      <p class="result-sub">Gerado automaticamente com base nas suas respostas</p>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head"><span>📋</span><h3>Informações do Projeto</h3></div>
+      <div class="section-body">
+        ${briefRows.map(r => `
+          <div class="brief-row">
+            <div class="brief-key">${r[0]}</div>
+            <div class="brief-val">${r[1]}</div>
+          </div>`).join('')}
+        ${detailItems}
+      </div>
+    </div>
+
+    ${['portas','janelas','piso','pintura','rev_externo','loucas','metais','pontos_hidra','luminarias','drywall']
+        .map(k => { const q = TREE.find(t => t.dbKey===k); return q ? buildDynResultBlock(q) : ''; })
+        .join('')}
+
+    <div class="section-card">
+      <div class="section-head"><span>⚡</span><h3>Alertas e Pontos de Atenção</h3></div>
+      <div class="section-body">
+        <div class="alert-list">${buildAlerts()}</div>
+      </div>
+    </div>
+
+    <div class="ai-box">
+      <div class="ai-header">
+        <div class="ai-tag">✦ Análise IA</div>
+        <div class="ai-title">Parecer Técnico do Projeto</div>
+      </div>
+      <div class="ai-body" id="aiBody">
+        <div class="loading-row"><div class="blink-dot"></div>Gerando parecer técnico personalizado...</div>
+      </div>
+    </div>
+
+    <div class="export-row">
+      <button class="btn-dark btn-gold" onclick="window.print()">🖨️ Imprimir / PDF</button>
+      <button class="btn-dark" onclick="restartAll()">↺ Novo diagnóstico</button>
+    </div>
+    <div style="height:2rem"></div>`;
+}
+
+async function runAI() {
+  const el = document.getElementById('aiBody');
+  if (!el) return;
+
+  function dynCtxLine(dbKey, label) {
+    const items = DYN[dbKey] || [];
+    if (!items.length) return '';
+    const lines = items.map((it, i) => {
+      const parts = [it.ambiente||it.local||it.tipo_ponto||`Item ${i+1}`];
+      if (it.tipo||it.sistema)    parts.push(it.tipo||it.sistema);
+      if (it.material)            parts.push(it.material);
+      if (it.largura&&it.altura)  parts.push(it.largura+'×'+it.altura+'cm');
+      if (it.area)                parts.push(it.area+'m²');
+      if (it.area_parede)         parts.push('Parede:'+it.area_parede+'m²');
+      if (it.area_teto)           parts.push('Teto:'+it.area_teto+'m²');
+      if (it.qtd&&+it.qtd>1)      parts.push('×'+it.qtd);
+      if (it.marca)               parts.push(it.marca);
+      if (it.acabamento)          parts.push(it.acabamento);
+      if (it.tipo_ponto)          parts.push('→'+it.destinacao);
+      if (it.diametro)            parts.push('ø'+it.diametro);
+      if (it.pt_af||it.pt_aq||it.pt_es) parts.push(`AC:${it.pt_af||0} AQ:${it.pt_aq||0} ES:${it.pt_es||0}`);
+      if (it.qtd_principal)       parts.push(it.qtd_principal+'pts luz');
+      if (it.temperatura)         parts.push(it.temperatura);
+      return '  '+(i+1)+'. '+parts.join(' | ');
+    }).join('\n');
+    return `${label} (${items.length} itens):\n${lines}`;
+  }
+
+  const matCtx = [
+    dynCtxLine('portas','PORTAS'),
+    dynCtxLine('janelas','JANELAS'),
+    dynCtxLine('piso','PISOS'),
+    dynCtxLine('pintura','PINTURA'),
+    dynCtxLine('rev_externo','REVESTIMENTO EXT.'),
+    dynCtxLine('loucas','LOUÇAS'),
+    dynCtxLine('metais','METAIS'),
+    dynCtxLine('pontos_hidra','PONTOS HIDRÁULICOS'),
+    dynCtxLine('luminarias','LUMINÁRIAS'),
+    dynCtxLine('drywall','DRYWALL / GESSO'),
+  ].filter(Boolean).join('\n\n');
+
+  const ctx = [
+    `Tipo: ${getCardLabels('tipo').join(', ')||'-'}`,
+    `Método construtivo: ${getCardLabels('metodo').join(', ')||'-'}`,
+    `Situação: ${getCardLabels('situacao').join(', ')||'-'}`,
+    `Ambientes: ${getCardLabels('ambientes').join(', ')||'-'}`,
+    `Instalações: ${getCardLabels('instalacoes').join(', ')||'-'}`,
+    `Restrições: ${getCardLabels('restricoes').join(', ')||'-'}`,
+    `Projeto: ${getCardLabels('projeto').join(', ')||'-'}`,
+    `Orçamento: ${getCardLabels('orcamento').join(', ')||'-'}`,
+    `Prazo: ${getCardLabels('prazo').join(', ')||'-'}`,
+    `Especiais: ${getCardLabels('especiais').join(', ')||'-'}`,
+    matCtx ? `\nLevantamento técnico detalhado:\n${matCtx}` : '',
+    `Observações: ${A.notas||'-'}`,
+  ].filter(Boolean).join('\n');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,
+        messages: [{
+          role: 'user',
+          content: `Você é um consultor experiente em reformas e construção civil no Brasil. Com base no briefing do cliente abaixo, escreva um parecer técnico claro e direto com estas seções:
+
+**Visão Geral** — 2 frases resumindo o projeto e seu porte real.
+
+**Riscos Prioritários** — até 3 riscos concretos com ação recomendada para cada.
+
+**Próximos Passos** — 4 ações objetivas e ordenadas para o cliente avançar nas próximas 2 semanas.
+
+**Estimativa Orientativa de Prazo** — baseada nos serviços e porte.
+
+Seja direto, técnico e útil. Não repita os dados brutos — interprete-os. Máximo 300 palavras.
+
+Briefing:
+${ctx}`
+        }]
+      })
+    });
+    const data = await res.json();
+    const txt = data.content?.map(b => b.text || '').join('') || 'Análise indisponível.';
+    el.innerHTML = txt
+      .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--gold)">$1</strong>')
+      .replace(/\n/g, '<br>');
+  } catch {
+    el.innerHTML = '<em style="opacity:.4">Análise de IA indisponível. Verifique sua conexão.</em>';
+  }
+}
+
+function restartAll() {
+  Object.keys(A).forEach(k => delete A[k]);
+  cursor = 0;
+  render();
+  window.scrollTo(0, 0);
+}
+
+// Boot
+computeSeq();
+render();
+</script>
+
+<style>
+@media print {
+  .top, .stepper, .q-nav, .export-row, .btn, .btn-dark, .btn-ghost { display: none !important; }
+  body { background: white; color: black; }
+  .result-hero, .section-card, .ai-box { border: 1px solid #ccc !important; background: white !important; }
+  .ai-body, .brief-val, .brief-key { color: black !important; }
+}
+</style>
+</body>
+</html>
